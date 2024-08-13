@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitQuest Dashboard</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js for interactive charts -->
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#profile">Profile</a></li>
+            </ul>
+            <a href="home.html" class="logout">Logout</a>
+        </nav>
+    </header>
+    <main>
+        <section id="home">
+            <h1>Welcome to FitQuest</h1>
+            <div class="dashboard-summary">
+                <div class="summary-card">
+                    <h3>Total Workouts</h3>
+                    <p id="total-workouts">0</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Daily Goal Progress</h3>
+                    <canvas id="goal-progress-chart"></canvas>
+                </div>
+                <div class="summary-card">
+                    <h3>Recent Notifications</h3>
+                    <ul id="notifications-list">
+                        <!-- Notifications will be dynamically added here -->
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="profile">
+            <h2>Your Profile</h2>
+            <!-- User Profile Information -->
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2024 FitQuest</p>
+    </footer>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
