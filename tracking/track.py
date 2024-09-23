@@ -20,6 +20,10 @@ legs_apart = False
 legs_together = True
 leg_cycle_count = 0
 
+total_count = 0
+# Set a confidence threshold for pose detection
+confidence_threshold = 0.6  # Adjust this as needed
+
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
@@ -64,34 +68,44 @@ while cap.isOpened():
             if hands_down:
                 hands_up = True
                 hands_down = False
+            
 
-        if hands_up and not hands_up_detected:
-            if not hands_down:
-                hand_cycle_count += 1
-                hands_up = False
-                hands_down = True
+        # Leg Cycle Detection with Confidence Check (Both Legs Move Together)
+        left_leg_visible = (left_knee.visibility > confidence_threshold and left_ankle.visibility > confidence_threshold)
+        right_leg_visible = (right_knee.visibility > confidence_threshold and right_ankle.visibility > confidence_threshold)
 
-        # Leg Cycle Detection (legs apart and together)
-        legs_apart_detected = (
-            (left_knee.x < left_hip.x) and (right_knee.x > right_hip.x) and
-            (left_ankle.x < left_knee.x) and (right_ankle.x > right_knee.x)
-        )
+        if left_leg_visible and right_leg_visible:
+            # Legs are detected confidently, proceed with cycle detection
+            legs_apart_detected = (
+                (left_knee.x < left_hip.x) and (right_knee.x > right_hip.x) and
+                (left_ankle.x < left_knee.x) and (right_ankle.x > right_knee.x)
+            )
 
-        if legs_apart_detected:
-            if legs_together:
-                legs_apart = True
-                legs_together = False
+            if legs_apart_detected:
+                # Both legs must be together initially
+                if legs_together:
+                    legs_apart = True
+                    legs_together = False
 
-        if legs_apart and not legs_apart_detected:
-            if not legs_together:
+            # If legs were apart and now are back together, increment the cycle count
+            legs_together_detected = (
+                (left_knee.x > left_hip.x and right_knee.x < right_hip.x) and
+                (left_ankle.x > left_knee.x and right_ankle.x < right_knee.x)
+            )
+
+            if legs_apart and legs_together_detected and hands_up and not hands_up_detected:
                 leg_cycle_count += 1
                 legs_apart = False
                 legs_together = True
+                if not hands_down:
+                    hand_cycle_count += 1
+                hands_up = False
+                hands_down = True
+                total_count += 1
 
         # Display the cycle counts on the frame
-        cv2.putText(frame, f'Hand Cycle Count: {hand_cycle_count}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-        cv2.putText(frame, f'Leg Cycle Count: {leg_cycle_count}', (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-
+        cv2.putText(frame, f'jumping jack Count: {hand_cycle_count}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        
     # Display the frame
     cv2.imshow('Body Tracking', frame)
 

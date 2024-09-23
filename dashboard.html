@@ -4,47 +4,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitQuest Dashboard</title>
-    <link rel="stylesheet" href="css/dashboard.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js for interactive charts -->
+    <link rel="stylesheet" href="./css/dashboard.css">
 </head>
 <body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="#home">Home</a></li>
-                <li><a href="#profile">Profile</a></li>
-            </ul>
-            <a href="home.html" class="logout">Logout</a>
-        </nav>
-    </header>
-    <main>
-        <section id="home">
-            <h1>Welcome to FitQuest</h1>
-            <div class="dashboard-summary">
-                <div class="summary-card">
+    <div class="container">
+        <aside class="sidebar">
+            <h2>FitQuest</h2>
+            <nav>
+                <ul>
+                    <li><a href="#">Dashboard</a></li>
+                    <li><a href="#">Workout Plan</a></li>
+                    <li><a href="#">Progress Tracker</a></li>
+                    <li><a href="#">Goals</a></li>
+                    <li><a href="#">Settings</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="content">
+            <header class="dashboard-header">
+                <h1>Welcome Back, [User]</h1>
+                <p>Track your progress and stay on top of your fitness goals.</p>
+            </header>
+            <section class="stats">
+                <div class="stat-card">
                     <h3>Total Workouts</h3>
-                    <p id="total-workouts">0</p>
+                    <p>15</p>
                 </div>
-                <div class="summary-card">
-                    <h3>Daily Goal Progress</h3>
-                    <canvas id="goal-progress-chart"></canvas>
+                <div class="stat-card">
+                    <h3>Calories Burned</h3>
+                    <p>1200 kcal</p>
                 </div>
-                <div class="summary-card">
-                    <h3>Recent Notifications</h3>
-                    <ul id="notifications-list">
-                        <!-- Notifications will be dynamically added here -->
-                    </ul>
+                <div class="stat-card">
+                    <h3>Active Days</h3>
+                    <p>7</p>
                 </div>
-            </div>
-        </section>
-        <section id="profile">
-            <h2>Your Profile</h2>
-            <!-- User Profile Information -->
-        </section>
-    </main>
-    <footer>
-        <p>&copy; 2024 FitQuest</p>
-    </footer>
-    <script src="js/dashboard.js"></script>
+            </section>
+            <section class="workout-plan">
+                <h2>Today's Workout Plan</h2>
+                <ul>
+                    <li>Jumping Jacks: 20 reps</li>
+                    <li>Squats: 15 reps</li>
+                    <li>Pushups: 10 reps</li>
+                    <li>Plank: 30 seconds</li>
+                </ul>
+            </section>
+        </main>
+    </div>
 </body>
 </html>

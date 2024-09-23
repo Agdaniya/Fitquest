@@ -1,106 +1,108 @@
-/* Basic Reset and Font Setup */
-body {
+* {
     margin: 0;
-    font-family: Arial, sans-serif;
-    line-height: 1.6;
-}
-
-header {
-    background: #071952;
-    color: #EBF4F6;
-    padding: 10px 0;
-}
-
-nav ul {
-    list-style: none;
     padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
+}
+
+body {
+    background-color: #d4b1a0; /* Similar soft brown */
+    color: #333;
+}
+
+.container {
     display: flex;
-    justify-content: center;
 }
 
-nav ul li {
-    margin: 0 15px;
+.sidebar {
+    width: 250px;
+    background-color: #3d3b56; /* Dark sidebar for contrast */
+    color: white;
+    padding: 20px;
+    height: 100vh;
 }
 
-nav ul li a {
-    color: #EBF4F6;
+.sidebar h2 {
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 30px;
+}
+
+.sidebar nav ul {
+    list-style: none;
+}
+
+.sidebar nav ul li {
+    margin-bottom: 15px;
+}
+
+.sidebar nav ul li a {
+    color: white;
     text-decoration: none;
-    font-weight: bold;
+    font-size: 18px;
 }
 
-main {
+.sidebar nav ul li a:hover {
+    color: #f0ad4e;
+}
+
+.main {
+    flex-grow: 1;
     padding: 20px;
-    background: #f4f4f4;
 }
 
-section {
-    margin-bottom: 20px;
+.dashboard-header {
+    margin-bottom: 40px;
 }
 
-footer {
-    background: #071952;
-    color: #EBF4F6;
-    text-align: center;
-    padding: 10px 0;
+.dashboard-header h1 {
+    font-size: 36px;
+    color: #3d3b56;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    nav ul {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    nav ul li {
-        margin: 10px 0;
-    }
-}
-
-@media (max-width: 480px) {
-    header {
-        text-align: center;
-    }
-
-    footer {
-        font-size: 0.8em;
-    }
-}
-/* Existing styles... */
-
-.dashboard-summary {
+.stats {
     display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 20px;
+    justify-content: space-around;
+    margin-bottom: 30px;
 }
 
-.summary-card {
-    background: #fff;
+.stat-card {
+    background-color: #ffffff;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    flex: 1;
-    min-width: 250px;
+    width: 30%;
     text-align: center;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
 }
 
-.summary-card h3 {
+.stat-card h3 {
+    font-size: 20px;
+    color: #3d3b56;
+}
+
+.stat-card p {
+    font-size: 24px;
+    color: #333;
+}
+
+.workout-plan {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.workout-plan h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+.workout-plan ul {
+    list-style: none;
+}
+
+.workout-plan ul li {
+    font-size: 18px;
     margin-bottom: 10px;
 }
 
-#goal-progress-chart {
-    width: 100%;
-    height: 200px;
-}
-
-#notifications-list {
-    list-style-type: none;
-    padding: 0;
-}
-
-#notifications-list li {
-    background: #f4f4f4;
-    padding: 10px;
-    margin-bottom: 5px;
-    border-radius: 4px;
-}

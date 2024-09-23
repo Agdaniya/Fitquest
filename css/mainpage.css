@@ -1,0 +1,144 @@
+@import url(https://db.onlinewebfonts.com/c/b83a33fcd4b5e7edd924fdfcaf84aa25?family=FS+Pimlico+Bold);
+@font-face {
+    font-family: "FS Pimlico Bold";
+    src: url("https://db.onlinewebfonts.com/t/b83a33fcd4b5e7edd924fdfcaf84aa25.eot");
+    src: url("https://db.onlinewebfonts.com/t/b83a33fcd4b5e7edd924fdfcaf84aa25.eot?#iefix")format("embedded-opentype"),
+    url("https://db.onlinewebfonts.com/t/b83a33fcd4b5e7edd924fdfcaf84aa25.woff2")format("woff2"),
+    url("https://db.onlinewebfonts.com/t/b83a33fcd4b5e7edd924fdfcaf84aa25.woff")format("woff"),
+    url("https://db.onlinewebfonts.com/t/b83a33fcd4b5e7edd924fdfcaf84aa25.ttf")format("truetype"),
+    url("https://db.onlinewebfonts.com/t/b83a33fcd4b5e7edd924fdfcaf84aa25.svg#FS Pimlico Bold")format("svg");
+}
+
+.title {
+    color: black;
+    font-size: 64px;
+    font-family: 'FS Pimlico Bold', sans-serif; /* Use the imported font */
+    font-weight: bold;
+    text-transform: uppercase;
+    word-wrap: break-word;
+}
+
+
+
+/* General container for the entire layout */
+.container {
+    width: 1550px;
+    height: 850px;
+    position: relative;
+    background: white;
+}
+
+/* Right-side dark panel */
+.right-panel {
+    width: 441px;
+    height: 850px;
+    left: 1109px;
+    top: 0px;
+    position: absolute;
+    background: #1F1F1F;
+}
+
+/* Main image style */
+.main-image {
+    width: 671.67px;
+    height: 650px;
+    left: 878px;
+    top: 200px;
+    position: absolute;
+}
+
+/* Text container */
+.text-container {
+    left: 64px;
+    top: 228.50px;
+    position: absolute;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 46px;
+}
+
+/* Nested text block inside text container */
+.text-block {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 58px;
+}
+
+/* Title container */
+.title-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+/* Title text styling */
+.title {
+    width: 460px;
+    opacity: 0.90;
+    color: black;
+    font-size: 64px;
+    font-family: Signika;
+    font-weight: 700;
+    text-transform: uppercase;
+    word-wrap: break-word;
+}
+
+/* Description text styling */
+.description {
+    width: 645px;
+    opacity: 0.40;
+    color: black;
+    font-size: 25px;
+    font-family: Signika;
+    font-weight: 300;
+    word-wrap: break-word;
+}
+
+/* Button container */
+.button-container {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+}
+
+/* Button styling */
+.button {
+    padding-left: 38px;
+    padding-right: 38px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    background: black;
+    border-radius: 15px;
+    color: white;
+    font-size: 20px;
+    font-family: Signika;
+    font-weight: 600;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    word-wrap: break-word;
+}
+
+/* Logo container */
+.logo-container {
+    left: 57px;
+    top: 37px;
+    position: absolute;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 330px;
+}
+
+/* Logo image styling */
+.logo {
+    width: 157px;
+    height: 44px;
+}
