@@ -6,7 +6,7 @@
 }
 
 body {
-    background-color: #d4b1a0; /* Similar soft brown */
+    background-color: #E2DAD6; /* Similar soft brown */
     color: #333;
 }
 
@@ -16,7 +16,7 @@ body {
 
 .sidebar {
     width: 250px;
-    background-color: #3d3b56; /* Dark sidebar for contrast */
+    background-color: #6482AD; /* Dark sidebar for contrast */
     color: white;
     padding: 20px;
     height: 100vh;
@@ -52,6 +52,8 @@ body {
 }
 
 .dashboard-header {
+    margin-left: 400px;
+    margin-top: 10px;
     margin-bottom: 40px;
 }
 
@@ -61,6 +63,7 @@ body {
 }
 
 .stats {
+    margin-left: 300px;
     display: flex;
     justify-content: space-around;
     margin-bottom: 30px;
@@ -89,6 +92,7 @@ body {
     background-color: #ffffff;
     padding: 20px;
     border-radius: 10px;
+    margin-left: 250px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
 }
 
