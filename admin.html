@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
+    <title>Admin Signup</title>
     <link rel="stylesheet" href="css/admin.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
     </style>
-    <script src="../fitquest/js/admin.js"></script>
 </head>
 <body>
     <div class="container">
@@ -18,17 +17,17 @@
         <div class="right-side">
             <div class="login-form">
                 <h1>SIGNUP</h1>
-                <form action="/signup-dashboard" method="post">
-                    <input type="text" id="adminId" name="adminId" required placeholder="NAME">
+                <form id="signup-form">
                     <input type="email" id="email" name="email" required placeholder="EMAIL">
-                    <input type="password" id="Password" name="Password" required placeholder="PASSWORD">
-                    <input type="password" id="Password" name="Password" required placeholder="CONFIRM PASSWORD">
-
-                    <input type="submit" value="Login">
+                    <input type="text" id="name" name="name" required placeholder="NAME">
+                    <input type="password" id="password" name="password" required placeholder="PASSWORD">
+                    <input type="password" id="confirm-password" name="confirmPassword" required placeholder="CONFIRM PASSWORD">
+                    <button type="submit">Register</button>
                 </form>
             </div>
             <a href="home.html" class="admin-login-link">Already have an account? Log in</a>
         </div>
     </div>
+    <script type="module" src="js/admin.js"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -13,43 +13,33 @@ const firebaseConfig = {
     measurementId: "G-6W3V2DH02K"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
 
-document.getElementById('signup-form').addEventListener('submit', (e) => {
+document.getElementById('login-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirm-password').value;
-    const name = document.getElementById('name').value;
 
-    if (password !== confirmPassword) {
-        alert("Passwords do not match!");
-        return;
-    }
-
-    createUserWithEmailAndPassword(auth, email, password)
+    signInWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
-            // Signed up 
             const user = userCredential.user;
             
-            // Add user data to realtime database
-            set(ref(database, 'users/' + user.uid), {
-                email: email,
-                name: name,
+            // Update last login time in the database
+            update(ref(database, 'users/' + user.uid), {
                 last_login: Date.now()
             });
 
-            alert("User created successfully! Please log in.");
+            alert("Login successful!");
             
-            // Redirect to home.html (login page)
-            window.location.href = 'home.html';
+            // Redirect to dashboard
+            window.location.href = 'dashboard.html';
         })
         .catch((error) => {
             const errorCode = error.code;
             const errorMessage = error.message;
-            alert("Error: " + errorMessage);
+            console.error("Login error:", errorMessage);
+            alert("Login failed: " + errorMessage);
         });
 });

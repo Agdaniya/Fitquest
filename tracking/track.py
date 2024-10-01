@@ -1,5 +1,7 @@
 import cv2
 import mediapipe as mp
+import sys
+import time
 
 # Initialize MediaPipe pose solution
 mp_pose = mp.solutions.pose
@@ -14,20 +16,28 @@ cap = cv2.VideoCapture(0)
 # Initialize variables to track the state and counts
 hands_up = False
 hands_down = True
-hand_cycle_count = 0
-
 legs_apart = False
 legs_together = True
-leg_cycle_count = 0
-
 total_count = 0
+
 # Set a confidence threshold for pose detection
 confidence_threshold = 0.6  # Adjust this as needed
 
+print("Tracking script started")  # Debug print
+
+# Add a timeout mechanism
+start_time = time.time()
+timeout_duration = 60  # 60 seconds timeout
+
 while cap.isOpened():
+    if time.time() - start_time > timeout_duration:
+        print("Timeout reached. Ending tracking.")
+        break
+
     ret, frame = cap.read()
     if not ret:
-        break
+        print("Failed to capture frame")  # Debug print
+        continue  # Try to capture the next frame instead of breaking
 
     # Convert the frame to RGB
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -68,8 +78,8 @@ while cap.isOpened():
             if hands_down:
                 hands_up = True
                 hands_down = False
+                print("Hands up detected")  # Debug print
             
-
         # Leg Cycle Detection with Confidence Check (Both Legs Move Together)
         left_leg_visible = (left_knee.visibility > confidence_threshold and left_ankle.visibility > confidence_threshold)
         right_leg_visible = (right_knee.visibility > confidence_threshold and right_ankle.visibility > confidence_threshold)
@@ -86,6 +96,7 @@ while cap.isOpened():
                 if legs_together:
                     legs_apart = True
                     legs_together = False
+                    print("Legs apart detected")  # Debug print
 
             # If legs were apart and now are back together, increment the cycle count
             legs_together_detected = (
@@ -94,17 +105,17 @@ while cap.isOpened():
             )
 
             if legs_apart and legs_together_detected and hands_up and not hands_up_detected:
-                leg_cycle_count += 1
                 legs_apart = False
                 legs_together = True
-                if not hands_down:
-                    hand_cycle_count += 1
                 hands_up = False
                 hands_down = True
                 total_count += 1
+                print(f"jumping jack Count: {total_count}")
+                sys.stdout.flush()  # Ensure the output is immediately visible to the parent process
+                start_time = time.time()  # Reset the timeout
 
         # Display the cycle counts on the frame
-        cv2.putText(frame, f'jumping jack Count: {hand_cycle_count}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(frame, f'jumping jack Count: {total_count}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
         
     # Display the frame
     cv2.imshow('Body Tracking', frame)
@@ -116,3 +127,5 @@ while cap.isOpened():
 # Release the capture and close the window
 cap.release()
 cv2.destroyAllWindows()
+
+print("Tracking script ended")  # Debug print

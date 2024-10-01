@@ -4,15 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitQuest Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/dashboard.css">
 </head>
 <body>
+    <div id="notification-container"></div>
+
     <div class="container">
         <aside class="sidebar">
             <h2>FitQuest</h2>
             <nav>
                 <ul>
-                    <li><a href="#">Dashboard</a></li>
+                    <li><a href="#" class="active">Dashboard</a></li>
                     <li><a href="#">Workout Plan</a></li>
                     <li><a href="#">Progress Tracker</a></li>
                     <li><a href="#">Goals</a></li>
@@ -20,36 +23,55 @@
                 </ul>
             </nav>
         </aside>
-        <main class="content">
-            <header class="dashboard-header">
-                <h1>Welcome Back, [User]</h1>
-                <br>
+
+        <main class="main">
+            <section class="dashboard-header">
+                <h1>Welcome Back, <span id="user-name"></span>!</h1>
                 <p>Track your progress and stay on top of your fitness goals.</p>
-            </header>
+            </section>
+
             <section class="stats">
                 <div class="stat-card">
                     <h3>Total Workouts</h3>
-                    <p>15</p>
+                    <p id="total-workouts">0</p>
                 </div>
                 <div class="stat-card">
                     <h3>Calories Burned</h3>
-                    <p>1200 kcal</p>
+                    <p id="calories-burned">0 kcal</p>
                 </div>
                 <div class="stat-card">
                     <h3>Active Days</h3>
-                    <p>7</p>
+                    <p id="active-days">0</p>
                 </div>
             </section>
+
             <section class="workout-plan">
                 <h2>Today's Workout Plan</h2>
-                <ul>
+                <ul id="workout-list">
                     <li>Jumping Jacks: 20 reps</li>
                     <li>Squats: 15 reps</li>
                     <li>Pushups: 10 reps</li>
                     <li>Plank: 30 seconds</li>
                 </ul>
             </section>
+
+            <section class="exercise-tracker">
+                <h2>Exercise Tracker</h2>
+                <div class="exercise-card">
+                    <h3>Jumping Jacks</h3>
+                    <div id="jumping-jack-count">0</div>
+                    <button id="start-jumping-jacks">Start Tracking</button>
+                </div>
+            </section>
+
+            <section class="goal-progress">
+                <h2>Goal Progress</h2>
+                <canvas id="goal-progress-chart"></canvas>
+            </section>
         </main>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="./js/dashboard.js"></script>
 </body>
 </html>
