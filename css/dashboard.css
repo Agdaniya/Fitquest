@@ -96,6 +96,16 @@ body {
     color: #3d3b56;
     margin-bottom: 10px;
 }
+.stat-card h2 {
+    font-size: 25px;
+    color: #3d3b56;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    
+}
+
+
 
 .stat-card p {
     font-size: 24px;
@@ -174,6 +184,8 @@ body {
     right: 20px;
     z-index: 1000;
 }
+
+
 
 .notification {
     background-color: #ffffff;

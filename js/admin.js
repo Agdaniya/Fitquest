@@ -34,6 +34,10 @@ document.getElementById('signup-form').addEventListener('submit', (e) => {
         .then((userCredential) => {
             // Signed up 
             const user = userCredential.user;
+
+             // Store the name in localStorage
+            localStorage.setItem('username', name);
+
             
             // Add user data to realtime database
             set(ref(database, 'users/' + user.uid), {
@@ -53,3 +57,5 @@ document.getElementById('signup-form').addEventListener('submit', (e) => {
             alert("Error: " + errorMessage);
         });
 });
+
+
