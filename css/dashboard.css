@@ -105,7 +105,12 @@ body {
     
 }
 
-
+.stat-card img{
+    display: flex;
+justify-content: center;
+align-items: center;
+overflow: hidden!important
+}
 
 .stat-card p {
     font-size: 24px;
