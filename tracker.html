@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitQuest Workout Plan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/dashboard.css">
+</head>
+<body>
+    <div id="notification-container"></div>
+
+    <div class="container">
+        <aside class="sidebar">
+            <h2>FitQuest</h2>
+            <nav>
+                <ul>
+                    <li><a href="dashboard.html" class="active">Dashboard</a></li>
+                    <li><a href="workout.html">Workout Plan</a></li>
+                    <li><a href="tracker.html">Progress Tracker</a></li>
+                    <li><a href="#">Goals</a></li>
+                    <li><a href="#">Settings</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main">
+           
+            <section class="exercise-tracker">
+                <h2>Exercise Tracker</h2>
+                <div class="exercise-card">
+                    <h3>Jumping Jacks<img src="asset/jjahk.jpg" alt=""style="width: 70px; height: auto;"></h3>
+                    <div id="jumping-jack-count">0</div>
+                    <button id="start-jumping-jacks">Start Tracking</button>
+                </div>
+                <div class="exercise-card">
+                    <h3>Squats<img src="asset/sqahk.jpg" alt=""style="width: 70px; height: auto;"></h3>
+                    <div id="jumping-jack-count">0</div>
+                    <button id="start-jumping-jacks">Start Tracking</button>
+                </div>
+                <div class="exercise-card">
+                    <h3>Pushups<img src="asset/puahk.jpg" alt=""style="width: 70px; height: auto;"></h3>
+                    <div id="jumping-jack-count">0</div>
+                    <button id="start-jumping-jacks">Start Tracking</button>
+                </div>
+                <div class="exercise-card">
+                    <h3>Plank<img src="asset/plahk.jpg" alt=""style="width: 70px; height: auto;"></h3>
+                    <div id="jumping-jack-count">0</div>
+                    <button id="start-jumping-jacks">Start Tracking</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="./js/dashboard.js"></script>
+
+           
+</body>
+</html>

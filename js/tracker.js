@@ -1,4 +1,3 @@
-import './admin.js';
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed');
 
@@ -88,21 +87,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // You can add other functions here (updateUserName, updateStats, updateWorkoutList, updateDashboard)
-});
-
-
-firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-        // Get the username from localStorage
-        const username = localStorage.getItem('username');
-
-        if (username) {
-            // Display the username on the dashboard
-            document.getElementById('welcomeMessage').textContent = `Welcome, ${username}!`;
-        } else {
-            console.error("No username found in localStorage");
-        }
-    } else {
-        window.location.href = 'dashboard.html'; // Redirect to login if not authenticated
-    }
 });
