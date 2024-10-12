@@ -25,16 +25,14 @@
         </aside>
 
         <main class="main">
-           
-            <section class="workout-plan">
-                <h2>Today's Workout Plan</h2>
-                <ul id="workout-list">
-                    <li>Jumping Jacks: 20 reps</li>
-                    <li>Squats: 15 reps</li>
-                    <li>Pushups: 10 reps</li>
-                    <li>Plank: 30 seconds</li>
-                </ul>
-            </section>
+            <form onsubmit="handleChangePassword(currentPassword.value, newPassword.value); return false;">
+                <label>Current Password:</label>
+                <input type="password" id="currentPassword" required>
+                <label>New Password:</label>
+                <input type="password" id="newPassword" required>
+                <button type="submit">Change Password</button>
+              </form>
+              
         </main>
     </div>
 
