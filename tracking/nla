@@ -177,3 +177,8 @@ cap.release()
 cv2.destroyAllWindows()
 
 print("Tracking script ended")  # Debug print
+
+
+
+
+<button id="start-jumping-jacks">Start Tracking</button>
