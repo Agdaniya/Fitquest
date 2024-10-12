@@ -15,15 +15,15 @@ is_tracking = False
 def run_tracking_script():
     global jumping_jack_count, is_tracking, tracking_process
     try:
-        print("Starting tracking script...")  # Debug print
-        script_path = os.path.join(os.path.dirname(__file__), 'track.py')
-        print(f"Script path: {script_path}")  # Debug print
+        print("Starting tracking script...")
+        script_path = os.path.join(os.path.dirname(__file__), 'jumpingjacks.py')
+        print(f"Script path: {script_path}")
         
         tracking_process = subprocess.Popen(['python', script_path], 
                                             stdout=subprocess.PIPE, 
                                             stderr=subprocess.PIPE, 
                                             universal_newlines=True)
-        print(f"Tracking process PID: {tracking_process.pid}")  # Debug print
+        print(f"Tracking process PID: {tracking_process.pid}")
         
         is_tracking = True
         
@@ -32,19 +32,19 @@ def run_tracking_script():
             if output == '' and tracking_process.poll() is not None:
                 break
             if output:
-                print(f"Tracking output: {output.strip()}")  # Debug print
+                print(f"Tracking output: {output.strip()}")
                 if output.startswith('jumping jack Count:'):
-                    jumping_jack_count = int(output.split(':')[1].strip())
-                    print(f"Updated count: {jumping_jack_count}")  # Debug print
+                    new_count = int(output.split(':')[1].strip())
+                    jumping_jack_count = new_count
+                    print(f"Updated count: {jumping_jack_count}")
         
         rc = tracking_process.poll()
         is_tracking = False
-        print(f"Tracking stopped with return code {rc}")  # Debug print
+        print(f"Tracking stopped with return code {rc}")
         
-        # Check for any errors
         error_output = tracking_process.stderr.read()
         if error_output:
-            print(f"Tracking script error: {error_output}")  # Debug print
+            print(f"Tracking script error: {error_output}")
     except Exception as e:
         print(f"Error in run_tracking_script: {str(e)}")
         print(traceback.format_exc())
@@ -57,7 +57,7 @@ def start_jumping_jacks():
         if not is_tracking:
             tracking_thread = threading.Thread(target=run_tracking_script)
             tracking_thread.start()
-            print("Tracking thread started")  # Debug print
+            print("Tracking thread started")
             return jsonify({"status": "started"})
         return jsonify({"status": "already_running"})
     except Exception as e:
@@ -70,14 +70,19 @@ def start_jumping_jacks():
 def get_jumping_jack_count():
     global jumping_jack_count, is_tracking, tracking_process
     if tracking_process:
-        print(f"Tracking process status: {tracking_process.poll()}")  # Debug print
-    print(f"Current count: {jumping_jack_count}, Status: {'running' if is_tracking else 'stopped'}")  # Debug print
+        print(f"Tracking process status: {tracking_process.poll()}")
+    print(f"Current count: {jumping_jack_count}, Status: {'running' if is_tracking else 'stopped'}")
     return jsonify({
         "count": jumping_jack_count,
         "status": "running" if is_tracking else "stopped"
     })
 
-# ... (rest of the code remains the same)
+@app.route('/track/reset-jumping-jacks', methods=['POST'])
+def reset_jumping_jacks():
+    global jumping_jack_count
+    jumping_jack_count = 0
+    print("Jumping jack count reset to 0")
+    return jsonify({"status": "reset"})
 
 if __name__ == '__main__':
     print("Starting Flask app...")

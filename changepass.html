@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitQuest Workout Plan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/dashboard.css">
+</head>
+<body>
+    <div id="notification-container"></div>
+
+    <div class="container">
+        <aside class="sidebar">
+            <h2>FitQuest</h2>
+            <nav>
+                <ul>
+                    <li><a href="dashboard.html" class="active">Dashboard</a></li>
+                    <li><a href="workout.html">Workout Plan</a></li>
+                    <li><a href="tracker.html">Progress Tracker</a></li>
+                    <li><a href="#">Goals</a></li>
+                    <li><a href="settings.html">Settings</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main">
+            <form onsubmit="handleChangePassword(currentPassword.value, newPassword.value); return false;">
+                <label>Current Password:</label>
+                <input type="password" id="currentPassword" required>
+                <label>New Password:</label>
+                <input type="password" id="newPassword" required>
+                <button type="submit">Change Password</button>
+              </form>
+              
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="./js/dashboard.js"></script>
+
+           
+</body>
+</html>
