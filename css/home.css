@@ -53,8 +53,9 @@ h1 {
     position: center;
 }
 
-input[type="text"],
-input[type="password"] {
+/*input[type="text"],*/
+input[type="password"],
+input[type="email"]  {
     width: 100%;
     padding: 8px;
     border: none;
@@ -80,7 +81,7 @@ input[type="submit"]:hover {
 
 .admin-login-link {
     position: absolute;
-    bottom: -40px; 
+    bottom: -20px; 
     text-align: center;
     color: #071952;
     text-decoration: none;

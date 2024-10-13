@@ -25,19 +25,20 @@
         </aside>
 
         <main class="main">
-            <form onsubmit="handleChangePassword(currentPassword.value, newPassword.value); return false;">
+            <form id="change-password-form" >
                 <label>Current Password:</label>
-                <input type="password" id="currentPassword" required>
+                <input type="password" id="current-password" required>
                 <label>New Password:</label>
-                <input type="password" id="newPassword" required>
+                <input type="password" id="new-password" required>
                 <button type="submit">Change Password</button>
               </form>
+              <div id="message"></div>
               
         </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="./js/dashboard.js"></script>
+    <script type="module" src="./js/changepass.js"></script>
 
            
 </body>

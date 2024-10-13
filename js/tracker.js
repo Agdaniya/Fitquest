@@ -143,3 +143,93 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial count update
     updateJumpingJackCount();
 });
+ 
+
+document.addEventListener('DOMContentLoaded', function() {
+    const startButtons = document.querySelectorAll('.tracking-button');
+    const API_BASE_URL = 'http://localhost:8000'; // Update with your actual API URL
+    const userId = auth.currentUser ? auth.currentUser.uid : null;
+
+    let totalWorkouts = 0; // Local variable to track total workouts
+
+    // Fetch initial total workouts count from Firebase
+    fetchTotalWorkouts();
+
+    startButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            console.log('Tracking started for:', this.getAttribute('data-exercise'));
+            const exerciseType = this.getAttribute('data-exercise');
+            
+            fetch(`${API_BASE_URL}/track/start-${exerciseType}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'started') {
+                    updateExerciseCount(exerciseType);
+                    incrementTotalWorkouts();  // Increment total workouts when a workout starts
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+
+    // Function to increment total workouts locally and in Firebase
+    function incrementTotalWorkouts() {
+        totalWorkouts += 1; // Increment the local total workouts count
+
+        // Update the total workouts count in Firebase (or your database)
+        if (userId) {
+            fetch(`${API_BASE_URL}/users/${userId}/totalWorkouts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ totalWorkouts })
+            })
+            .then(() => {
+                console.log('Total workouts updated in Firebase:', totalWorkouts);
+                updateTotalWorkoutsDisplay(totalWorkouts);  // Update the dashboard
+            })
+            .catch(error => console.error('Error updating total workouts in Firebase:', error));
+        } else {
+            console.log('User not authenticated');
+        }
+    }
+
+    // Fetch the total workouts from Firebase when the page loads
+    function fetchTotalWorkouts() {
+        if (userId) {
+            fetch(`${API_BASE_URL}/users/${userId}/totalWorkouts`)
+            .then(response => response.json())
+            .then(data => {
+                totalWorkouts = data.totalWorkouts || 0;  // Set the initial total workouts count
+                updateTotalWorkoutsDisplay(totalWorkouts);  // Display the initial count on the dashboard
+            })
+            .catch(error => console.error('Error fetching total workouts:', error));
+        }
+    }
+
+    // Update the exercise count display for each individual exercise
+    function updateExerciseCount(exerciseType) {
+        const exerciseCountDisplay = document.getElementById(`${exerciseType}-count`);
+
+        fetch(`${API_BASE_URL}/track/get-${exerciseType}-count`, {
+            method: 'GET',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.count !== undefined) {
+                exerciseCountDisplay.textContent = data.count;
+            }
+        })
+        .catch(error => console.error('Error fetching exercise count:', error));
+    }
+
+    // Function to update the total workouts display on the dashboard
+    function updateTotalWorkoutsDisplay(totalWorkouts) {
+        const totalWorkoutsDisplay = document.getElementById('total-workouts');
+        if (totalWorkoutsDisplay) {
+            totalWorkoutsDisplay.textContent = totalWorkouts;
+        }
+    }
+});

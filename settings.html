@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitQuest Workout Plan</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./css/dashboard.css">
+    <link rel="stylesheet" href="./css/settings.css">
 </head>
 <body>
     <div id="notification-container"></div>
@@ -27,19 +27,27 @@
         <main class="main">
            
             <section class="workout-plan">
-                <h2>Today's Workout Plan</h2>
-                <ul id="workout-list">
-                    <a href="changepass.html"><li>Change Password</li></a>
-                    <li>Squats: 15 reps</li>
-                    <li>Pushups: 10 reps</li>
-                    <li>Log Out</li>
+                <h2>Settings</h2>
+                <ul id="settings-list">
+                    <a class="link" href="changepass.html"><li>Change Password</li></a>
+                    <button id="about-us-btn">About</button>
+                    <li>Contact Us</li>
+                    <a class="link" href="mainpage.html"><li>Log Out</li></a>
                 </ul>
             </section>
         </main>
     </div>
+    <div id="about-us-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-modal">&times;</span>
+            <h2>About Us</h2>
+            <p>Welcome to FitQuest, your personal companion on the journey to a healthier, fitter you! At FitQuest, we believe that fitness is not just a goal but a continuous adventure. Our platform is designed to make your workout routine enjoyable, motivating, and effective, whether you're a beginner or a seasoned athlete.</p>
+            <p>Our mission is to empower individuals to reach their fitness goals by providing an all-in-one solution for workout tracking, progress monitoring, and personalized fitness plans. With real-time workout tracking, insightful analytics, and easy-to-follow routines, FitQuest ensures you stay on track and see real results.</p>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="./js/dashboard.js"></script>
+    <script src="./js/settings.js"></script>
 
            
 </body>

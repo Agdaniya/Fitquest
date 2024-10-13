@@ -106,3 +106,32 @@ firebase.auth().onAuthStateChanged((user) => {
         window.location.href = 'dashboard.html'; // Redirect to login if not authenticated
     }
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    const API_BASE_URL = 'http://localhost:5000';
+    const userId = auth.currentUser ? auth.currentUser.uid : null;
+
+    // Fetch and display total workouts on the dashboard
+    function fetchTotalWorkouts() {
+        if (userId) {
+            fetch(`${API_BASE_URL}/users/${userId}/totalWorkouts`)
+            .then(response => response.json())
+            .then(data => {
+                const totalWorkouts = data.totalWorkouts || 0;
+                updateTotalWorkoutsDisplay(totalWorkouts);
+            })
+            .catch(error => console.error('Error fetching total workouts:', error));
+        }
+    }
+
+    // Update the total workouts count display on the dashboard
+    function updateTotalWorkoutsDisplay(totalWorkouts) {
+        const totalWorkoutsDisplay = document.getElementById('total-workouts');
+        if (totalWorkoutsDisplay) {
+            totalWorkoutsDisplay.textContent = totalWorkouts;
+        }
+    }
+
+    // Fetch total workouts count when dashboard loads
+    fetchTotalWorkouts();
+});
