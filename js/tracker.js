@@ -1,12 +1,38 @@
+// Import Firebase modules
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyAOgdbddMw93MExNBz3tceZ8_NrNAl5q40",
+    authDomain: "fitquest-9b891.firebaseapp.com",
+    projectId: "fitquest-9b891",
+    storageBucket: "fitquest-9b891.appspot.com",
+    messagingSenderId: "275044631678",
+    appId: "1:275044631678:web:7fa9586ba031270baa042f",
+    measurementId: "G-6W3V2DH02K"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const database = getDatabase(app);
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed');
+
+    const API_BASE_URL = 'http://localhost:5000';
 
     const startButton = document.getElementById('start-jumping-jacks');
     const resetButton = document.getElementById('reset-jumping-jacks');
     const countDisplay = document.getElementById('jumping-jack-count');
     const totalCountDisplay = document.getElementById('total-jumping-jack-count');
 
-    const API_BASE_URL = 'http://localhost:5000';
+    if (!startButton || !resetButton || !countDisplay || !totalCountDisplay) {
+        console.error('One or more required elements not found');
+        return;
+    }
 
     let previousCount = 0;
     let totalCount = 0;
@@ -17,6 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
             totalCount += difference;
             totalCountDisplay.textContent = `Total: ${totalCount}`;
             console.log(`Total count updated: ${totalCount}`);
+            updateFirebaseCount('jumping-jacks', totalCount);
         }
         previousCount = newCount;
     }
@@ -27,75 +54,72 @@ document.addEventListener('DOMContentLoaded', function() {
         updateTotalCount(count);
     }
 
-    if (startButton) {
-        console.log('Start button found');
-        startButton.addEventListener('click', function() {
-            console.log('Start button clicked');
-            fetch(`${API_BASE_URL}/track/start-jumping-jacks`, { 
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(response => {
-                console.log('Response status:', response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Data received:', data);
-                if (data.status === 'started') {
-                    this.disabled = true;
-                    this.textContent = 'Tracking...';
-                    updateJumpingJackCount();
-                } else if (data.status === 'already_running') {
-                    showNotification('Tracking is already in progress!', 'warning');
-                    updateJumpingJackCount();
-                } else {
-                    throw new Error('Unexpected response status');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Failed to start tracking. Please try again.', 'error');
-            });
+    startButton.addEventListener('click', function() {
+        console.log('Start button clicked');
+        fetch(`${API_BASE_URL}/track/start-jumping-jacks`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data received:', data);
+            if (data.status === 'started') {
+                this.disabled = true;
+                this.textContent = 'Tracking...';
+                updateJumpingJackCount();
+            } else if (data.status === 'already_running') {
+                showNotification('Tracking is already in progress!', 'warning');
+                updateJumpingJackCount();
+            } else {
+                throw new Error('Unexpected response status');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to start tracking. Please try again.', 'error');
         });
-    } else {
-        console.error('Start button not found');
-    }
+    });
 
-    if (resetButton) {
-        console.log('Reset button found');
-        resetButton.addEventListener('click', function() {
-            console.log('Reset button clicked');
-            fetch(`${API_BASE_URL}/track/reset-jumping-jacks`, { 
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(response => {
-                console.log('Response status:', response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Data received:', data);
-                if (data.status === 'reset') {
-                    previousCount = 0;
-                    totalCount = 0;
-                    updateCount(0);
-                    showNotification('Jumping Jack count has been reset!', 'success');
-                } else {
-                    throw new Error('Unexpected response status');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Failed to reset count. Please try again.', 'error');
-            });
+    resetButton.addEventListener('click', function() {
+        console.log('Reset button clicked');
+        fetch(`${API_BASE_URL}/track/reset-jumping-jacks`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data received:', data);
+            if (data.status === 'reset') {
+                previousCount = 0;
+                totalCount = 0;
+                updateCount(0);
+                showNotification('Jumping Jack count has been reset!', 'success');
+                updateFirebaseCount('jumping-jacks', 0);
+            } else {
+                throw new Error('Unexpected response status');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to reset count. Please try again.', 'error');
         });
-    } else {
-        console.error('Reset button not found');
-    }
+    });
 
     function updateJumpingJackCount() {
         console.log('Updating jumping jack count');
@@ -128,6 +152,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function showNotification(message, type = 'info') {
         console.log(`Notification: ${message} (${type})`);
         const notificationContainer = document.getElementById('notification-container');
+        if (!notificationContainer) {
+            console.error('Notification container not found');
+            return;
+        }
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
         notification.textContent = message;
@@ -140,96 +168,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
-    // Initial count update
-    updateJumpingJackCount();
-});
- 
+    function updateFirebaseCount(exerciseType, count) {
+        const user = auth.currentUser;
+        if (user) {
+            set(ref(database, `users/${user.uid}/exercises/${exerciseType}`), {
+                count: count,
+                lastUpdated: Date.now()
+            }).catch(error => {
+                console.error('Error updating Firebase:', error);
+            });
+        } else {
+            console.log('No user logged in, skipping Firebase update');
+        }
+    }
 
-document.addEventListener('DOMContentLoaded', function() {
-    const startButtons = document.querySelectorAll('.tracking-button');
-    const API_BASE_URL = 'http://localhost:8000'; // Update with your actual API URL
-    const userId = auth.currentUser ? auth.currentUser.uid : null;
 
-    let totalWorkouts = 0; // Local variable to track total workouts
-
-    // Fetch initial total workouts count from Firebase
-    fetchTotalWorkouts();
-
-    startButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            console.log('Tracking started for:', this.getAttribute('data-exercise'));
-            const exerciseType = this.getAttribute('data-exercise');
-            
-            fetch(`${API_BASE_URL}/track/start-${exerciseType}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'started') {
-                    updateExerciseCount(exerciseType);
-                    incrementTotalWorkouts();  // Increment total workouts when a workout starts
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            console.log('User logged in, fetching initial count');
+            const userExerciseRef = ref(database, `users/${user.uid}/exercises/jumping-jacks`);
+            onValue(userExerciseRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    totalCount = data.count;
+                    totalCountDisplay.textContent = `Total: ${totalCount}`;
+                    console.log('Initial count loaded:', totalCount);
+                } else {
+                    console.log('No existing count found for user');
+                    totalCount = 0;
+                    totalCountDisplay.textContent = `Total: 0`;
                 }
-            })
-            .catch(error => console.error('Error:', error));
-        });
+            });
+        } else {
+            console.log('No user logged in');
+        }
     });
 
-    // Function to increment total workouts locally and in Firebase
-    function incrementTotalWorkouts() {
-        totalWorkouts += 1; // Increment the local total workouts count
-
-        // Update the total workouts count in Firebase (or your database)
-        if (userId) {
-            fetch(`${API_BASE_URL}/users/${userId}/totalWorkouts`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ totalWorkouts })
-            })
-            .then(() => {
-                console.log('Total workouts updated in Firebase:', totalWorkouts);
-                updateTotalWorkoutsDisplay(totalWorkouts);  // Update the dashboard
-            })
-            .catch(error => console.error('Error updating total workouts in Firebase:', error));
-        } else {
-            console.log('User not authenticated');
-        }
-    }
-
-    // Fetch the total workouts from Firebase when the page loads
-    function fetchTotalWorkouts() {
-        if (userId) {
-            fetch(`${API_BASE_URL}/users/${userId}/totalWorkouts`)
-            .then(response => response.json())
-            .then(data => {
-                totalWorkouts = data.totalWorkouts || 0;  // Set the initial total workouts count
-                updateTotalWorkoutsDisplay(totalWorkouts);  // Display the initial count on the dashboard
-            })
-            .catch(error => console.error('Error fetching total workouts:', error));
-        }
-    }
-
-    // Update the exercise count display for each individual exercise
-    function updateExerciseCount(exerciseType) {
-        const exerciseCountDisplay = document.getElementById(`${exerciseType}-count`);
-
-        fetch(`${API_BASE_URL}/track/get-${exerciseType}-count`, {
-            method: 'GET',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.count !== undefined) {
-                exerciseCountDisplay.textContent = data.count;
-            }
-        })
-        .catch(error => console.error('Error fetching exercise count:', error));
-    }
-
-    // Function to update the total workouts display on the dashboard
-    function updateTotalWorkoutsDisplay(totalWorkouts) {
-        const totalWorkoutsDisplay = document.getElementById('total-workouts');
-        if (totalWorkoutsDisplay) {
-            totalWorkoutsDisplay.textContent = totalWorkouts;
-        }
-    }
+    // Initial count update
+    updateJumpingJackCount();
 });
