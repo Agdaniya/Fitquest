@@ -151,6 +151,9 @@ overflow: hidden!important
     flex-wrap: wrap;
 }
 
+.goal-card {
+    text-decoration: none;
+}
 
 #jumping-jack-count {
     font-size: 36px;

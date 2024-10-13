@@ -3,6 +3,10 @@ const modal = document.getElementById("about-us-modal");
 const closeModalBtn = document.getElementById("close-modal");
 const aboutUsBtn = document.getElementById("about-us-btn");
 
+const contactModal = document.getElementById('contact-us-modal');
+    const contactUsBtn = document.getElementById('contact-us-btn');
+    const closeContactModalBtn = document.getElementById('close-contact-modal');
+
 console.log('About Us button:', aboutUsBtn);
 console.log('Close button:', closeModalBtn);
 
@@ -24,4 +28,13 @@ window.onclick = function(event) {
         console.log('Clicked outside modal');
         modal.style.display = "none";  // Hide the modal
     }
+}
+
+contactUsBtn.onclick = function() {
+    contactModal.style.display = "flex"; // Show the modal
+}
+
+// Close the Contact Us modal when the close button (x) is clicked
+closeContactModalBtn.onclick = function() {
+    contactModal.style.display = "none"; // Hide the modal
 }
