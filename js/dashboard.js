@@ -1,5 +1,5 @@
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed');
@@ -31,16 +31,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const exerciseTypes = ['jumping-jacks', 'squats', 'pushups', 'planks'];
 
         exerciseTypes.forEach(exerciseType => {
-            get(ref(database, `users/${userId}/exercises/${exerciseType}`))
-                .then(snapshot => {
-                    if (snapshot.exists()) {
-                        const data = snapshot.val();
-                        updateExerciseCountDisplay(exerciseType, data.count);
-                    }
-                })
-                .catch(error => {
-                    console.error(`Error fetching ${exerciseType} count:`, error);
-                });
+            const userExerciseRef = ref(database, `users/${userId}/exercises/${exerciseType}`);
+            onValue(userExerciseRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    updateExerciseCountDisplay(exerciseType, data.count);
+                } else {
+                    updateExerciseCountDisplay(exerciseType, 0);
+                }
+            });
         });
     }
 
@@ -53,14 +52,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Fetch total workouts count
     function fetchTotalWorkouts(userId) {
-        get(ref(database, `users/${userId}/totalWorkouts`))
-            .then(snapshot => {
-                if (snapshot.exists()) {
-                    const totalWorkouts = snapshot.val();
-                    updateTotalWorkoutsDisplay(totalWorkouts);
-                }
-            })
-            .catch(error => console.error('Error fetching total workouts:', error));
+        const totalWorkoutsRef = ref(database, `users/${userId}/totalWorkouts`);
+        onValue(totalWorkoutsRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const totalWorkouts = snapshot.val();
+                updateTotalWorkoutsDisplay(totalWorkouts);
+            } else {
+                updateTotalWorkoutsDisplay(0);
+            }
+        });
     }
 
     function updateTotalWorkoutsDisplay(totalWorkouts) {

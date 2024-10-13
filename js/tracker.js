@@ -36,25 +36,78 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let previousCount = 0;
     let totalCount = 0;
+    let currentUser = null;
+    let isTracking = false;
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            console.log('User logged in, fetching initial count');
+            resetLocalCounters();
+            fetchInitialCount();
+        } else {
+            console.log('No user logged in');
+            currentUser = null;
+            resetLocalCounters();
+            updateDisplays(0);
+        }
+    });
+
+    function resetLocalCounters() {
+        previousCount = 0;
+        totalCount = 0;
+        isTracking = false;
+        startButton.disabled = false;
+        startButton.textContent = 'Start Tracking';
+    }
+
+    function fetchInitialCount() {
+        const userExerciseRef = ref(database, `users/${currentUser.uid}/exercises/jumping-jacks`);
+        get(userExerciseRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                totalCount = data.count || 0;
+                previousCount = totalCount;
+                updateDisplays(totalCount);
+                console.log('Initial count loaded:', totalCount);
+            } else {
+                console.log('No existing count found for user');
+                totalCount = 0;
+                previousCount = 0;
+                updateDisplays(0);
+            }
+        }).catch((error) => {
+            console.error('Error fetching initial count:', error);
+        });
+    }
+
+    function updateDisplays(count) {
+        countDisplay.textContent = count;
+        totalCountDisplay.textContent = `Total: ${count}`;
+    }
 
     function updateTotalCount(newCount) {
+        if (!currentUser || !isTracking) {
+            console.log('No user logged in or not tracking, skipping count update');
+            return;
+        }
+
         const difference = newCount - previousCount;
         if (difference > 0) {
             totalCount += difference;
-            totalCountDisplay.textContent = `Total: ${totalCount}`;
+            updateDisplays(totalCount);
             console.log(`Total count updated: ${totalCount}`);
             updateFirebaseCount('jumping-jacks', totalCount);
         }
         previousCount = newCount;
     }
 
-    function updateCount(count) {
-        countDisplay.textContent = count;
-        console.log(`Count updated: ${count}`);
-        updateTotalCount(count);
-    }
-
     startButton.addEventListener('click', function() {
+        if (!currentUser) {
+            showNotification('Please log in to track your exercises', 'warning');
+            return;
+        }
+
         console.log('Start button clicked');
         fetch(`${API_BASE_URL}/track/start-jumping-jacks`, { 
             method: 'POST',
@@ -74,9 +127,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.status === 'started') {
                 this.disabled = true;
                 this.textContent = 'Tracking...';
+                isTracking = true;
                 updateJumpingJackCount();
             } else if (data.status === 'already_running') {
                 showNotification('Tracking is already in progress!', 'warning');
+                isTracking = true;
                 updateJumpingJackCount();
             } else {
                 throw new Error('Unexpected response status');
@@ -89,6 +144,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     resetButton.addEventListener('click', function() {
+        if (!currentUser) {
+            showNotification('Please log in to reset your count', 'warning');
+            return;
+        }
+
         console.log('Reset button clicked');
         fetch(`${API_BASE_URL}/track/reset-jumping-jacks`, { 
             method: 'POST',
@@ -106,9 +166,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             console.log('Data received:', data);
             if (data.status === 'reset') {
-                previousCount = 0;
-                totalCount = 0;
-                updateCount(0);
+                resetLocalCounters();
+                updateDisplays(0);
                 showNotification('Jumping Jack count has been reset!', 'success');
                 updateFirebaseCount('jumping-jacks', 0);
             } else {
@@ -122,6 +181,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function updateJumpingJackCount() {
+        if (!isTracking) {
+            console.log('Tracking stopped');
+            return;
+        }
+
         console.log('Updating jumping jack count');
         fetch(`${API_BASE_URL}/track/get-jumping-jack-count`)
             .then(response => {
@@ -132,10 +196,11 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 console.log('Count data received:', data);
-                updateCount(data.count);
-                if (data.status === 'running') {
+                updateTotalCount(data.count);
+                if (data.status === 'running' && isTracking) {
                     setTimeout(updateJumpingJackCount, 1000);
                 } else {
+                    isTracking = false;
                     startButton.disabled = false;
                     startButton.textContent = 'Start Tracking';
                     showNotification('Jumping Jack tracking completed!', 'success');
@@ -143,6 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error:', error);
+                isTracking = false;
                 startButton.disabled = false;
                 startButton.textContent = 'Start Tracking';
                 showNotification('Error while tracking. Please try again.', 'error');
@@ -169,41 +235,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateFirebaseCount(exerciseType, count) {
-        const user = auth.currentUser;
-        if (user) {
-            set(ref(database, `users/${user.uid}/exercises/${exerciseType}`), {
-                count: count,
-                lastUpdated: Date.now()
-            }).catch(error => {
-                console.error('Error updating Firebase:', error);
-            });
-        } else {
+        if (!currentUser) {
             console.log('No user logged in, skipping Firebase update');
+            return;
         }
+
+        set(ref(database, `users/${currentUser.uid}/exercises/${exerciseType}`), {
+            count: count,
+            lastUpdated: Date.now()
+        }).then(() => {
+            console.log('Firebase updated successfully');
+        }).catch(error => {
+            console.error('Error updating Firebase:', error);
+        });
     }
-
-
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            console.log('User logged in, fetching initial count');
-            const userExerciseRef = ref(database, `users/${user.uid}/exercises/jumping-jacks`);
-            onValue(userExerciseRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    totalCount = data.count;
-                    totalCountDisplay.textContent = `Total: ${totalCount}`;
-                    console.log('Initial count loaded:', totalCount);
-                } else {
-                    console.log('No existing count found for user');
-                    totalCount = 0;
-                    totalCountDisplay.textContent = `Total: 0`;
-                }
-            });
-        } else {
-            console.log('No user logged in');
-        }
-    });
-
-    // Initial count update
-    updateJumpingJackCount();
 });
