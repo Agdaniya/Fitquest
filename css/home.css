@@ -1,22 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+:root {
+    --primary-color: #071952;
+    --secondary-color: #088395;
+    --background-color: #7FA1C3;
+    --text-color: #333;
+    --white: #fff;
+}
+
 body {
     margin: 0;
-    /*background: url('../asset/pexels-abdghat-1631677.jpg') no-repeat center center fixed;*/
-    background-color: #7FA1C3;
-    background-size: cover;
-    font-family: Arial, sans-serif;
+    font-family: 'Poppins', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
+    background-color: var(--background-color);
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--background-color);
+    opacity: 0.9;
+    z-index: -1;
 }
 
 .container {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 75px;
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 3rem;
+    border-radius: 20px;
     display: flex;
-    width: 80%;
+    width: 90%;
     max-width: 1200px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .left-side {
@@ -25,9 +47,22 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 40px;
+    padding: 2rem;
     text-align: center;
-    font-family: 'Poppins', sans-serif;
+}
+
+.logo {
+    width: 150px;
+    height: auto;
+    margin-bottom: 1rem;
+}
+
+.left-side h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-top: 1rem;
+    margin-bottom: 0;
 }
 
 .right-side {
@@ -36,66 +71,115 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 20px;
-    position: relative; /* To position the link absolutely within the right-side */
+    padding: 2rem;
 }
 
 .login-form {
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 400px;
 }
 
-h1 {
-    margin-bottom: 20px;
-    position: center;
+.login-form h1 {
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    color: var(--primary-color);
+    text-align: center;
 }
 
-/*input[type="text"],*/
-input[type="password"],
-input[type="email"]  {
+input[type="text"],
+input[type="email"],
+input[type="password"] {
     width: 100%;
-    padding: 8px;
+    padding: 0.8rem;
+    margin-bottom: 1rem;
     border: none;
-    border-bottom: 1px solid #ddd; /* Line under the input fields */
+    border-bottom: 2px solid var(--secondary-color);
     background: transparent;
-    margin-bottom: 20px; /* Space between fields */
-    outline: none; /* Removes the outline on focus */
+    color: var(--text-color);
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder {
+    color: #888;
 }
 
 input[type="submit"] {
-    background-color: #071952;
-    color: #EBF4F6;
+    background-color: var(--primary-color);
+    color: var(--white);
     border: none;
-    padding: 10px;
-    border-radius: 4px;
+    padding: 0.8rem;
+    border-radius: 5px;
     cursor: pointer;
     width: 100%;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+    margin-top: 1rem;
 }
 
 input[type="submit"]:hover {
-    background-color: #088395;
+    background-color: var(--secondary-color);
 }
 
 .admin-login-link {
-    position: absolute;
-    bottom: -20px; 
+    margin-top: 1rem;
     text-align: center;
-    color: #071952;
+    color: var(--primary-color);
     text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+    display: block;
 }
 
 .admin-login-link:hover {
-    text-decoration: underline;
+    color: var(--secondary-color);
+}
+
+
+button {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    padding: 0.8rem;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+    margin-top: 1rem;
+}
+
+button:hover {
+    background-color: var(--secondary-color);
 }
 
 @media (max-width: 768px) {
     .container {
         flex-direction: column;
+        padding: 1.5rem;
     }
     .left-side, .right-side {
         width: 100%;
+        padding: 1rem;
+    }
+    .logo {
+        width: 100px;
+    }
+    .left-side h1 {
+        font-size: 2rem;
+    }
+    .login-form h1 {
+        font-size: 1.5rem;
     }
 }
