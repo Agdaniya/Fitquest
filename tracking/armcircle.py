@@ -1,11 +1,10 @@
 import cv2
 import mediapipe as mp
-import time
 import sys
 
 # Initialize MediaPipe pose solution
 mp_pose = mp.solutions.pose
-pose = mp_pose.Pose()
+pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
 # Initialize MediaPipe drawing utils
 mp_drawing = mp.solutions.drawing_utils
@@ -22,11 +21,16 @@ cv2.namedWindow('Arm Circle Tracking', cv2.WINDOW_NORMAL)
 cv2.setWindowProperty('Arm Circle Tracking', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
 # Initialize variables to track the state and counts
-arm_circle_started = False
 total_arm_circles = 0
-arm_moving_up = False
-arm_moving_down = False
 confidence_threshold = 0.6  # Confidence threshold for detection
+
+# Define stages of arm circle
+STAGE_START = 0
+STAGE_ABOVE_HEAD = 1
+STAGE_BEHIND = 2
+STAGE_BELOW_HIP = 3
+
+current_stage = STAGE_START
 
 print("Tracking arm circles...")
 
@@ -34,7 +38,7 @@ while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         print("Failed to capture frame")
-        continue
+        break
 
     # Convert the frame to RGB
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -50,27 +54,32 @@ while cap.isOpened():
             mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2, circle_radius=2)
         )
         
-        # Get landmarks for shoulder and wrist
+        # Get landmarks for wrist, shoulder, hip, and head
         landmarks = results.pose_landmarks.landmark
         left_wrist = landmarks[mp_pose.PoseLandmark.LEFT_WRIST]
         left_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
+        left_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP]
+        left_ear = landmarks[mp_pose.PoseLandmark.LEFT_EAR]  # Using ear as reference for head
 
-        if left_wrist.visibility > confidence_threshold and left_shoulder.visibility > confidence_threshold:
-            # Arm moving up
-            if left_wrist.y < left_shoulder.y and not arm_moving_up:
-                arm_moving_up = True
-                arm_moving_down = False
-                print("Arm moving up")
-
-            # Arm moving down (completes an arm circle)
-            if left_wrist.y > left_shoulder.y and arm_moving_up:
-                arm_moving_down = True
-                arm_moving_up = False
+        if all(lm.visibility > confidence_threshold for lm in [left_wrist, left_shoulder, left_hip, left_ear]):
+            # Check stages of arm circle
+            if current_stage == STAGE_START and left_wrist.y < left_ear.y:
+                current_stage = STAGE_ABOVE_HEAD
+                print("Hand above head")
+            elif current_stage == STAGE_ABOVE_HEAD and left_wrist.x < left_shoulder.x:
+                current_stage = STAGE_BEHIND
+                print("Hand behind")
+            elif current_stage == STAGE_BEHIND and left_wrist.y > left_hip.y:
+                current_stage = STAGE_BELOW_HIP
+                print("Hand below hip")
+            elif current_stage == STAGE_BELOW_HIP and left_wrist.x > left_shoulder.x:
+                current_stage = STAGE_START
                 total_arm_circles += 1
                 print(f"Arm Circle Count: {total_arm_circles}")
 
-        # Display arm circle count on the frame
+        # Display arm circle count and current stage on the frame
         cv2.putText(frame, f'Arm Circle Count: {total_arm_circles}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(frame, f'Stage: {current_stage}', (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
     else:
         print("No pose detected")
