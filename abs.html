@@ -27,22 +27,12 @@
         <main class="main">
             <section class="dashboard-header">
                 <h1 id="welcomeMessage"></h1>
-                <p>Abs Workout</p>
             </section>
-
-            <section class="stats">
-                <div class="stat-card">
-                    <h3>Crunches</h3>
-                    <p id="total-workouts">20 reps</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Planks</h3>
-                    <p id="calories-burned">30 sec</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Bicycle crunches</h3>
-                    <p id="active-days">15 reps</p>
-                </div>
+             <div class="section workout-details">
+        <h2>Abs Workout</h2>
+        <div id="workoutContent"></div>
+        <button id="executePlanBtn">Let's Do IT</button>
+    </div>
             </section>
             
 
@@ -51,6 +41,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script  type="module" src="./js/dashboard.js"></script>
+    <script  type="module" src="./js/abs.js"></script>
 </body>
 </html>
