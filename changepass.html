@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FitQuest Workout Plan</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./css/dashboard.css">
+    <title>Change Password - FitQuest</title>
+    <link rel="stylesheet" href="css/changepassw.css">
 </head>
 <body>
     <div id="notification-container"></div>
 
     <div class="container">
         <aside class="sidebar">
-            <h2>FitQuest</h2>
+            <div class="sidebar-logo">
+                <img src="asset/logo.png" alt="FitQuest Logo">
+            </div>
             <nav>
                 <ul>
-                    <li><a href="dashboard.html" >Dashboard</a></li>
+                    <li><a href="dashboard.html">Dashboard</a></li>
                     <li><a href="workout.html">Workout Plan</a></li>
                     <li><a href="tracker.html">Progress Tracker</a></li>
                     <li><a href="goals.html">Goals</a></li>
@@ -24,22 +25,27 @@
             </nav>
         </aside>
 
-        <main class="main">
-            <form id="change-password-form" >
-                <label>Current Password:</label>
-                <input type="password" id="current-password" required>
-                <label>New Password:</label>
-                <input type="password" id="new-password" required>
-                <button type="submit">Change Password</button>
-              </form>
-              <div id="message"></div>
-              
+        <main class="main" role="main">
+            <h1>Change Password</h1>
+            <form id="change-password-form" class="change-password-form">
+                <div class="form-group">
+                    <label for="current-password">Current Password:</label>
+                    <input type="password" id="current-password" name="current-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">New Password:</label>
+                    <input type="password" id="new-password" name="new-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Confirm New Password:</label>
+                    <input type="password" id="confirm-password" name="confirm-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Change Password</button>
+            </form>
+            <div id="message"></div>
         </main>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type="module" src="./js/changepass.js"></script>
-
-           
+    <script src="js/changepass.js"></script>
 </body>
 </html>

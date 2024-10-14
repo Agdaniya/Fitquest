@@ -9,59 +9,60 @@
     <script type="module" src="./js/tracker.js"></script>
 </head>
 <body>
-    <div id="notification-container"></div>
+  <div id="notification-container"></div>
 
-    <div class="container">
-        <aside class="sidebar">
-            <h2>FitQuest</h2>
-            <nav>
-                <ul>
-                    <li><a href="dashboard.html" >Dashboard</a></li>
-                    <li><a href="workout.html">Workout Plan</a></li>
-                    <li><a href="tracker.html" class="active">Progress Tracker</a></li>
-                    <li><a href="goals.html">Goals</a></li>
-                    <li><a href="settings.html">Settings</a></li>
-                </ul>
-            </nav>
-        </aside>
-
-        <main class="main" role="main">
-            <section class="exercise-tracker">
+  <div class="container">
+      <div class="sidebar">
+          <div class="sidebar-logo">
+              <img src="asset/logo.png" alt="FitQuest Logo">
+          </div>
+          <nav>
+              <ul>
+                  <li><a href="dashboard.html">Dashboard</a></li>
+                  <li><a href="workout.html">Workout Plan</a></li>
+                  <li><a href="tracker.html" class="active">Progress Tracker</a></li>
+                  <li><a href="goals.html">Goals</a></li>
+                  <li><a href="settings.html">Settings</a></li>
+              </ul>
+          </nav>
+      </div>
+  
+      <div class="main" role="main">
+          <div class="section exercise-tracker">
               <h2>Exercise Tracker</h2>
-              
+  
               <div class="exercise-card">
-                <h3>Jumping Jacks</h3>
-                <img src="asset/jjahk.jpg" alt="Jumping Jacks" class="exercise-image">
-                <div id="jumping-jack-count" class="exercise-count">0</div>
-                <div id="total-jumping-jack-count" class="total-exercise-count">Total: 0</div>
-                <button id="start-jumping-jacks" class="tracking-button">Start Tracking</button>
-                <button id="reset-jumping-jacks" class="reset-button">Reset Count</button>
-            </div>
-        
-              <div class="exercise-card">
-                <h3>Squats</h3>
-                <img src="asset/sqahk.jpg" alt="Squats" class="exercise-image">
-                <div id="squats-count" class="exercise-count">0</div>
-                <button class="tracking-button" data-exercise="squats">Start Tracking</button>
+                  <h3>Jumping Jacks</h3>
+                  <img src="asset/jjahk.jpg" alt="Jumping Jacks" class="exercise-image">
+                  <div id="jumping-jack-count" class="exercise-count">0</div>
+                  <div id="total-jumping-jack-count" class="total-exercise-count">Total: 0</div>
+                  <button id="start-jumping-jacks" class="tracking-button">Start Tracking</button>
+                  <button id="reset-jumping-jacks" class="reset-button">Reset Count</button>
               </div>
-        
+  
               <div class="exercise-card">
-                <h3>Pushups</h3>
-                <img src="asset/puahk.jpg" alt="Pushups" class="exercise-image">
-                <div id="pushup-count" class="exercise-count">0</div>
-                <button class="tracking-button" data-exercise="pushups">Start Tracking</button>
+                  <h3>Squats</h3>
+                  <img src="asset/sqahk.jpg" alt="Squats" class="exercise-image">
+                  <div id="squats-count" class="exercise-count">0</div>
+                  <button id="start-squats" class="tracking-button">Start Tracking</button>
               </div>
-        
+  
               <div class="exercise-card">
-                <h3>Plank</h3>
-                <img src="asset/plahk.jpg" alt="Plank" class="exercise-image">
-                <div id="planks-count" class="exercise-count">0</div>
-                <button class="tracking-button" data-exercise="planks">Start Tracking</button>
+                  <h3>Pushups</h3>
+                  <img src="asset/puahk.jpg" alt="Pushups" class="exercise-image">
+                  <div id="pushup-count" class="exercise-count">0</div>
+                  <button id="start-pushups" class="tracking-button">Start Tracking</button>
               </div>
-            </section>
-          </main>
-    </div>
-
+  
+              <div class="exercise-card">
+                  <h3>Plank</h3>
+                  <img src="asset/plahk.jpg" alt="Plank" class="exercise-image">
+                  <div id="planks-count" class="exercise-count">0</div>
+                  <button id="start-planks" class="tracking-button">Start Tracking</button>
+              </div>
+          </div>
+      </div>
+  </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="./js/tracker.js"></script>
 
