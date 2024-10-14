@@ -1,11 +1,10 @@
 import cv2
 import mediapipe as mp
-import time
 import sys
 
 # Initialize MediaPipe pose solution
 mp_pose = mp.solutions.pose
-pose = mp_pose.Pose()
+pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
 # Initialize MediaPipe drawing utils
 mp_drawing = mp.solutions.drawing_utils
@@ -33,7 +32,7 @@ while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         print("Failed to capture frame")
-        continue
+        break
 
     # Convert the frame to RGB
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -49,7 +48,7 @@ while cap.isOpened():
             mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2, circle_radius=2)
         )
         
-        # Get landmarks for shoulders, elbows, and wrists
+        # Get landmarks for shoulders, elbows, wrists, and eyes
         landmarks = results.pose_landmarks.landmark
         left_wrist = landmarks[mp_pose.PoseLandmark.LEFT_WRIST]
         right_wrist = landmarks[mp_pose.PoseLandmark.RIGHT_WRIST]
@@ -57,29 +56,38 @@ while cap.isOpened():
         right_elbow = landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW]
         left_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
         right_shoulder = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+        left_eye = landmarks[mp_pose.PoseLandmark.LEFT_EYE]
+        right_eye = landmarks[mp_pose.PoseLandmark.RIGHT_EYE]
 
-        # Detect if arms are up (wrist above the shoulder level)
-        arms_up_detected = (
-            left_wrist.y < left_shoulder.y and right_wrist.y < right_shoulder.y
-        )
+        # Calculate the average eye level
+        eye_level = (left_eye.y + right_eye.y) / 2
 
-        # Detect if arms are down (wrist below the shoulder level)
-        arms_down_detected = (
-            left_wrist.y > left_elbow.y and right_wrist.y > right_elbow.y
-        )
+        # Check confidence levels
+        if all(lm.visibility > confidence_threshold for lm in [left_wrist, right_wrist, left_elbow, right_elbow, left_shoulder, right_shoulder, left_eye, right_eye]):
+            # Detect if arms are up (both elbows and wrists above the shoulders, and wrists at or above eye level)
+            arms_up_detected = (
+                left_elbow.y < left_shoulder.y and right_elbow.y < right_shoulder.y and
+                left_wrist.y <= eye_level and right_wrist.y <= eye_level
+            )
 
-        # Check for upward motion (from down to up)
-        if arms_down and arms_up_detected:
-            arms_up = True
-            arms_down = False
-            print("Arms raised")
+            # Detect if arms are down (both elbows and wrists below the shoulders)
+            arms_down_detected = (
+                left_elbow.y > left_shoulder.y and right_elbow.y > right_shoulder.y and
+                left_wrist.y > left_shoulder.y and right_wrist.y > right_shoulder.y
+            )
 
-        # Check for downward motion (from up to down)
-        if arms_up and arms_down_detected:
-            arms_up = False
-            arms_down = True
-            total_arm_raises += 1
-            print(f"Arm Raises Count: {total_arm_raises}")
+            # Check for upward motion (from down to up)
+            if arms_down and arms_up_detected:
+                arms_up = True
+                arms_down = False
+                print("Arms raised")
+
+            # Check for downward motion (from up to down)
+            elif arms_up and arms_down_detected:
+                arms_up = False
+                arms_down = True
+                total_arm_raises += 1
+                print(f"Arm Raises Count: {total_arm_raises}")
         
         # Display arm raise count on the frame
         cv2.putText(frame, f'Arm Raise Count: {total_arm_raises}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
