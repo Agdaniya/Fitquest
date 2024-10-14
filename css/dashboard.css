@@ -1,3 +1,11 @@
+:root {
+    --primary-color: #3498db;
+    --secondary-color: #e74c3c;
+    --background-color: #ecf0f1;
+    --text-color: #2c3e50;
+    --light-accent: #bdc3c7;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,8 +14,8 @@
 }
 
 body {
-    background-color: #f4f6f9;
-    color: #333;
+    background-color: var(--background-color);
+    color: var(--text-color);
     line-height: 1.6;
 }
 
@@ -17,20 +25,27 @@ body {
 }
 
 .sidebar {
-    width: 250px;
-    background-color: #3c4b64;
-    color: white;
+    width: 280px;
+    background-color: #f8f9fa;
+    color: var(--text-color);
     padding: 20px;
     position: fixed;
     height: 100vh;
     overflow-y: auto;
+    transition: width 0.3s ease;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
-.sidebar h2 {
-    text-align: center;
-    font-size: 24px;
+.sidebar-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     margin-bottom: 30px;
-    color: #f0ad4e;
+}
+
+.sidebar-logo img {
+    width: 200px;
+    height: auto;
 }
 
 .sidebar nav ul {
@@ -42,23 +57,26 @@ body {
 }
 
 .sidebar nav ul li a {
-    color: #ffffff;
+    color: var(--text-color);
     text-decoration: none;
     font-size: 16px;
     display: block;
-    padding: 10px;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
+    padding: 12px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
 }
 
 .sidebar nav ul li a:hover, .sidebar nav ul li a.active {
-    background-color: #4e5d78;
+    background-color: var(--primary-color);
+    color: white;
+    transform: translateX(5px);
 }
 
 .main {
     flex-grow: 1;
-    margin-left: 250px;
+    margin-left: 280px;
     padding: 30px;
+    transition: margin-left 0.3s ease;
 }
 
 .dashboard-header {
@@ -67,7 +85,7 @@ body {
 
 .dashboard-header h1 {
     font-size: 32px;
-    color: #3d3b56;
+    color: var(--primary-color);
     margin-bottom: 10px;
 }
 
@@ -93,98 +111,32 @@ body {
 
 .stat-card h3 {
     font-size: 18px;
-    color: #3d3b56;
+    color: var(--text-color);
     margin-bottom: 10px;
 }
+
 .stat-card h2 {
     font-size: 25px;
-    color: #3d3b56;
+    color: var(--text-color);
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    
 }
 
-.stat-card img{
+.stat-card img {
     display: flex;
-justify-content: center;
-align-items: center;
-overflow: hidden!important
+    justify-content: center;
+    align-items: center;
+    overflow: hidden !important;
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 15px;
 }
 
 .stat-card p {
     font-size: 24px;
-    color: #4caf50;
+    color: var(--primary-color);
     font-weight: bold;
-}
-
-.workout-plan, .exercise-tracker, .goal-progress {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 30px;
-}
-
-.workout-plan h2, .exercise-tracker h2, .goal-progress h2 {
-    font-size: 24px;
-    margin-bottom: 15px;
-    color: #3d3b56;
-}
-
-.workout-plan ul {
-    list-style: none;
-}
-
-.workout-plan ul li {
-    font-size: 16px;
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: #f0f4f7;
-    border-radius: 5px;
-}
-
-.exercise-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-}
-
-.goal-card {
-    text-decoration: none;
-}
-
-#jumping-jack-count {
-    font-size: 36px;
-    font-weight: bold;
-    color: #4caf50;
-    margin: 10px 0;
-}
-
-#start-jumping-jacks {
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-#start-jumping-jacks:hover {
-    background-color: #45a049;
-}
-
-#start-jumping-jacks:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-}
-
-#goal-progress-chart {
-    max-width: 300px;
-    margin: 0 auto;
 }
 
 #notification-container {
@@ -194,11 +146,9 @@ overflow: hidden!important
     z-index: 1000;
 }
 
-
-
 .notification {
     background-color: #ffffff;
-    color: #333;
+    color: var(--text-color);
     padding: 15px 20px;
     margin-bottom: 10px;
     border-radius: 5px;
