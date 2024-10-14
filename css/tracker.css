@@ -134,7 +134,9 @@ body {
 #jumping-jack-count,
 #squats-count,
 #pushup-count,
-#planks-count {
+#planks-count,
+#hand-raise-count,
+#hand-circle-count {
     font-size: 48px;
     font-weight: bold;
     color: var(--primary-color);
