@@ -10,64 +10,63 @@
 <body>
     <div id="notification-container"></div>
 
-    <div class="container">
-        <aside class="sidebar">
-            <h2>FitQuest</h2>
-            <nav>
-                <ul>
-                    <li><a href="dashboard.html" class="active">Dashboard</a></li>
-                    <li><a href="workout.html">Workout Plan</a></li>
-                    <li><a href="tracker.html">Progress Tracker</a></li>
-                    <li><a href="goals.html">Goals</a></li>
-                    <li><a href="settings.html">Settings</a></li>
-                </ul>
-            </nav>
-        </aside>
-
-        <main class="main">
-            <section class="dashboard-header">
-                <h1 id="welcomeMessage"></h1>
-                <p>Track your progress and stay on top of your fitness goals.</p>
-            </section>
-
-            <section class="stats">
-                <div class="stat-card">
-                    <h3>Total Workouts</h3>
-                    <p id="total-workouts">0</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Calories Burned</h3>
-                    <p id="calories-burned">0 kcal</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Active Days</h3>
-                    <p id="active-days">0</p>
-                </div>
-            </section>
-            <section class="stats">
-                <div class="stat-card">
-                    <img src="asset/jj.png" alt="">
-                    <h2 class="para">Jumping Jacks</h2>
-                </div>
-                <div class="stat-card">
-                    <img src="asset/squat.png" alt="">
-                    <h2 class="para">Squat</h2>
-                </div>
-                <div class="stat-card">
-                    <img src="asset/planks.png" alt="">
-                    <h2 class="para">Planks</h2>
-                </div>
-                <div class="stat-card">
-                    <img src="asset/pushup.png" alt="">
-                    <h2 class="para">Push Up</h2>
-                </div>
-            </section>
-
-           
-
-            
-        </main>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <img src="asset/logo.png" alt="FitQuest Logo">
+        </div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html" class="active">Dashboard</a></li>
+                <li><a href="workout.html">Workout Plan</a></li>
+                <li><a href="tracker.html">Progress Tracker</a></li>
+                <li><a href="goals.html">Goals</a></li>
+                <li><a href="settings.html">Settings</a></li>
+            </ul>
+        </nav>
     </div>
+
+    <div class="main" role="main">
+        <div class="section dashboard-header">
+            <h1 id="welcomeMessage"></h1>
+            <p>Track your progress and stay on top of your fitness goals.</p>
+        </div>
+
+        <div class="section stats">
+            <div class="stat-card">
+                <h3>Total Workouts</h3>
+                <p>0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Calories Burned</h3>
+                <p>0 kcal</p>
+            </div>
+            <div class="stat-card">
+                <h3>Active Days</h3>
+                <p>0</p>
+            </div>
+        </div>
+
+        <div class="section stats">
+            <div class="stat-card">
+                <img src="asset/jj.png" alt="Jumping Jacks">
+                <h2 id="jumping-jacks" class="para">Jumping Jacks</h2>
+            </div>
+            <div class="stat-card">
+                <img src="asset/squat.png" alt="Squat">
+                <h2 id="squat" class="para">Squat</h2>
+            </div>
+            <div class="stat-card">
+                <img src="asset/planks.png" alt="Planks">
+                <h2 id="planks" class="para">Planks</h2>
+            </div>
+            <div class="stat-card">
+                <img src="asset/pushup.png" alt="Push Up">
+                <h2 id="push-up" class="para">Push Up</h2>
+            </div>
+        </div>
+    </div>
+</div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script  type="module" src="./js/dashboard.js"></script>
