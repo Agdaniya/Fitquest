@@ -163,10 +163,10 @@ function updateLoginStreakDisplay(streak) {
         streakDisplay.textContent = streak;
     }
 }
-
+const todaysGoal = document.getElementById('todaysGoals');
 function initializeWelcomeMessage() {
     const welcomeMessage = document.getElementById('welcomeMessage');
-    const todaysGoal = document.getElementById('todaysGoals');
+    
     
     const currentHour = new Date().getHours();
     let greeting;
@@ -182,6 +182,19 @@ function initializeWelcomeMessage() {
     if (welcomeMessage) {
         welcomeMessage.textContent = `${greeting}!`;
     }
+}
+if (todaysGoal) {
+    const storedGoal = localStorage.getItem('todaysGoal');
+    console.log('Retrieved todaysGoal from localStorage:', storedGoal);
+
+    if (storedGoal) {
+        todaysGoal.innerHTML = `<p>${storedGoal}</p>`;
+    } else {
+        todaysGoal.innerHTML = '<p>No goal set for today. Visit the Workout Plan page to set your goal.</p>';
+        console.log('No goal found in localStorage');
+    }
+} else {
+    console.warn("Today's goal element not found");
 }
 
 function initializeWaterIntakeTracker() {
