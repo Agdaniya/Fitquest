@@ -26,6 +26,7 @@ import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.13.
     if (!user) {
       alert("No user is currently logged in.");
       return;
+      
     }
 
     const credential = EmailAuthProvider.credential(user.email, currentPassword);
