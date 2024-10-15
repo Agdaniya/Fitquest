@@ -139,6 +139,45 @@ body {
     font-weight: bold;
 }
 
+.water-intake {
+    background-color: #f0f8ff;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    margin-top: 20px;
+}
+.water-container {
+    width: 200px;
+    height: 300px;
+    background-color: #ffffff;
+    border: 2px solid #0077be;
+    border-radius: 0 0 20px 20px;
+    margin: 20px auto;
+    position: relative;
+    overflow: hidden;
+}
+.water-level {
+    width: 100%;
+    background-color: #0077be;
+    position: absolute;
+    bottom: 0;
+    transition: height 0.5s ease-in-out;
+}
+.water-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+.water-buttons button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #0077be;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
 #notification-container {
     position: fixed;
     top: 20px;
