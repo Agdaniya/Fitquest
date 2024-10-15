@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function startTracking(exerciseType) {
         console.log(`Starting ${exerciseType} tracking...`);
-        fetch(`${API_BASE_URL}/track/start-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : (exerciseType === 'arm-raises' ? 'lateral-arm-raises' : 'arm-circle')}`, { 
+        fetch(`${API_BASE_URL}/track/start-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : (exerciseType === 'arm-raises' ? 'arm-raises' : 'arm-circle')}`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         console.log(`Updating ${exerciseType} count`);
-        fetch(`${API_BASE_URL}/track/get-${exerciseType === 'jumping-jacks' ? 'jumping-jack-count' :  (exerciseType === 'arm-raises' ? 'lateral-arm-raise-count' : 'arm-circle-count')}`)
+        fetch(`${API_BASE_URL}/track/get-${exerciseType === 'jumping-jacks' ? 'jumping-jack-count' :  (exerciseType === 'arm-raises' ? 'arm-raise-count' : 'arm-circle-count')}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -480,67 +480,67 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function calculateTotalCalories(userId) {
-        const exerciseTypes = ['jumping-jacks', 'arm-raises', 'arm-circle'];
-        let totalCaloriesBurned = 0;
-        const promises = exerciseTypes.map(exerciseType => {
-            const userExerciseRef = ref(database, `users/${userId}/exercises/${exerciseType}`);
-            return get(userExerciseRef).then((snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    let caloriesForExercise = 0;
-                    switch (exerciseType) {
-                        case 'jumping-jacks':
-                            caloriesForExercise = data.count * 0.2;
-                            break;
-                        case 'arm-raises':
-                            caloriesForExercise = data.count * 0.03;
-                            break;
-                        case 'arm-circle':
-                            caloriesForExercise = data.count * 0.04;
-                            break;
-                    }
-                    totalCaloriesBurned += caloriesForExercise;
+    const exerciseTypes = ['jumping-jacks', 'arm-raises', 'arm-circle'];
+    let totalCaloriesBurned = 0;
+    const promises = exerciseTypes.map(exerciseType => {
+        const userExerciseRef = ref(database, `users/${userId}/exercises/${exerciseType}`);
+        return get(userExerciseRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                let caloriesForExercise = 0;
+                switch (exerciseType) {
+                    case 'jumping-jacks':
+                        caloriesForExercise = data.count * 0.2;
+                        break;
+                    case 'arm-raises':
+                        caloriesForExercise = data.count * 0.03;
+                        break;
+                    case 'arm-circle':
+                        caloriesForExercise = data.count * 0.04;
+                        break;
                 }
-            });
+                totalCaloriesBurned += caloriesForExercise;
+            }
         });
-    
-        // Wait for all asynchronous calls to finish
-        Promise.all(promises).then(() => {
-            // Update total calories in Firebase after all calculations are complete
-            set(ref(database, `users/${userId}/totalCaloriesBurned`), (totalCaloriesBurned))
-            .then(() => {
-                console.log('Total calories updated successfully in Firebase');
-            })
-            .catch(error => {
-                console.error('Error updating total calories:', error);
-            });
-        }).catch(error => {
-            console.error('Error fetching exercise data:', error);
+    });
+
+    // Wait for all asynchronous calls to finish
+    Promise.all(promises).then(() => {
+        // Update total calories in Firebase after all calculations are complete
+        set(ref(database, `users/${userId}/totalCaloriesBurned`), (totalCaloriesBurned))
+        .then(() => {
+            console.log('Total calories updated successfully in Firebase');
+        })
+        .catch(error => {
+            console.error('Error updating total calories:', error);
         });
+    }).catch(error => {
+        console.error('Error fetching exercise data:', error);
+    });
+}
+
+function updateFirebaseCalories(exerciseType, count) {
+    if (!currentUser) {
+        console.log('No user logged in, skipping Firebase calorie update');
+        return;
     }
-    
-    function updateFirebaseCalories(exerciseType, count) {
-        if (!currentUser) {
-            console.log('No user logged in, skipping Firebase calorie update');
-            return;
-        }
-    
-        const caloriesPerExercise = {
-            'jumping-jacks': 0.2,
-            'arm-raises': 0.03,
-            'arm-circle': 0.04
-        };
-    
-        const caloriesBurned = count * caloriesPerExercise[exerciseType];
-    
-        set(ref(database, `users/${currentUser.uid}/calories/${exerciseType}`), {
-            calories: caloriesBurned,
-            lastUpdated: Date.now()
-        }).then(() => {
-            console.log('Firebase calories updated successfully');
-        }).catch(error => {
-            console.error('Error updating Firebase calories:', error);
-        });
-    }
-    
+
+    const caloriesPerExercise = {
+        'jumping-jacks': 0.2,
+        'arm-raises': 0.03,
+        'arm-circle': 0.04
+    };
+
+    const caloriesBurned = count * caloriesPerExercise[exerciseType];
+
+    set(ref(database, `users/${currentUser.uid}/calories/${exerciseType}`), {
+        calories: caloriesBurned,
+        lastUpdated: Date.now()
+    }).then(() => {
+        console.log('Firebase calories updated successfully');
+    }).catch(error => {
+        console.error('Error updating Firebase calories:', error);
+    });
+}
+
 });
