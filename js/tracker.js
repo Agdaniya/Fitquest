@@ -18,7 +18,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
-
+const caloriesPerExercise = {
+    'jumping-jacks': 0.4,
+    'hand-raise': 0.02,
+    'arm-circle': 0.03
+};
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed');
 
@@ -180,6 +184,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateFirebaseCount('arm-circle', aCTotalCount);
             }
             aCPreviousCount = newCount;
+        }
+        if (difference > 0) {
+            totalCount += difference;
+            updateDisplays(totalCount);
+            console.log(`Total count updated: ${totalCount}`);
+            updateFirebaseCount('jumping-jacks', totalCount);
+            updateFirebaseCalories('jumping-jacks', totalCount);
         }
     }
 
@@ -461,8 +472,75 @@ document.addEventListener('DOMContentLoaded', function() {
             lastUpdated: Date.now()
         }).then(() => {
             console.log(`Firebase updated successfully for ${exerciseType}`);
+            // Trigger calorie calculation update
+            calculateTotalCalories(currentUser.uid);
         }).catch(error => {
             console.error(`Error updating Firebase for ${exerciseType}:`, error);
         });
     }
+    
+    function calculateTotalCalories(userId) {
+        const exerciseTypes = ['jumping-jacks', 'arm-raises', 'arm-circle'];
+        let totalCaloriesBurned = 0;
+        const promises = exerciseTypes.map(exerciseType => {
+            const userExerciseRef = ref(database, `users/${userId}/exercises/${exerciseType}`);
+            return get(userExerciseRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    let caloriesForExercise = 0;
+                    switch (exerciseType) {
+                        case 'jumping-jacks':
+                            caloriesForExercise = data.count * 0.2;
+                            break;
+                        case 'arm-raises':
+                            caloriesForExercise = data.count * 0.03;
+                            break;
+                        case 'arm-circle':
+                            caloriesForExercise = data.count * 0.04;
+                            break;
+                    }
+                    totalCaloriesBurned += caloriesForExercise;
+                }
+            });
+        });
+    
+        // Wait for all asynchronous calls to finish
+        Promise.all(promises).then(() => {
+            // Update total calories in Firebase after all calculations are complete
+            set(ref(database, `users/${userId}/totalCaloriesBurned`), (totalCaloriesBurned))
+            .then(() => {
+                console.log('Total calories updated successfully in Firebase');
+            })
+            .catch(error => {
+                console.error('Error updating total calories:', error);
+            });
+        }).catch(error => {
+            console.error('Error fetching exercise data:', error);
+        });
+    }
+    
+    function updateFirebaseCalories(exerciseType, count) {
+        if (!currentUser) {
+            console.log('No user logged in, skipping Firebase calorie update');
+            return;
+        }
+    
+        const caloriesPerExercise = {
+            'jumping-jacks': 0.2,
+            'arm-raises': 0.03,
+            'arm-circle': 0.04
+        };
+    
+        const caloriesBurned = count * caloriesPerExercise[exerciseType];
+    
+        set(ref(database, `users/${currentUser.uid}/calories/${exerciseType}`), {
+            calories: caloriesBurned,
+            lastUpdated: Date.now()
+        }).then(() => {
+            console.log('Firebase calories updated successfully');
+        }).catch(error => {
+            console.error('Error updating Firebase calories:', error);
+        });
+    }
+    
 });

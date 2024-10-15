@@ -1,87 +1,124 @@
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+console.log("Script starting execution");
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+console.log("Imports completed");
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyAOgdbddMw93MExNBz3tceZ8_NrNAl5q40",
+    authDomain: "fitquest-9b891.firebaseapp.com",
+    projectId: "fitquest-9b891",
+    storageBucket: "fitquest-9b891.appspot.com",
+    messagingSenderId: "275044631678",
+    appId: "1:275044631678:web:7fa9586ba031270baa042f",
+    measurementId: "G-6W3V2DH02K"
+};
+
+console.log("Initializing Firebase");
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const database = getDatabase(app);
+
+console.log("Firebase initialized");
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed');
 
-    const auth = getAuth();
-    const database = getDatabase();
-    const API_BASE_URL = 'http://localhost:5000';
-
-    auth.onAuthStateChanged((user) => {
+    onAuthStateChanged(auth, (user) => {
+        console.log("Auth state changed");
         if (user) {
-            // Get the username from localStorage
-            const username = localStorage.getItem('username');
-
-            if (username) {
-                // Display the username on the dashboard
-                document.getElementById('welcomeMessage').textContent = `Welcome, ${username}!`;
-            } else {
-                console.error("No username found in localStorage");
-            }
-
-            // Fetch and display exercise counts
-            fetchExerciseCounts(user.uid);
+            console.log("User is logged in:", user.uid);
+            fetchTotalCaloriesBurned(user.uid);
+            fetchTotalWorkouts(user.uid); // Moved this to combine with user check
         } else {
-            window.location.href = 'home.html'; // Redirect to login if not authenticated
-        }
-    });
-
-    function fetchExerciseCounts(userId) {
-        const exerciseTypes = ['jumping-jacks', 'squats', 'pushups', 'planks'];
-
-        exerciseTypes.forEach(exerciseType => {
-            const userExerciseRef = ref(database, `users/${userId}/exercises/${exerciseType}`);
-            onValue(userExerciseRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    updateExerciseCountDisplay(exerciseType, data.count);
-                } else {
-                    updateExerciseCountDisplay(exerciseType, 0);
-                }
-            });
-        });
-    }
-
-    function updateExerciseCountDisplay(exerciseType, count) {
-        const countDisplay = document.getElementById(`${exerciseType}-count`);
-        if (countDisplay) {
-            countDisplay.textContent = count;
-        }
-    }
-
-    // Fetch total workouts count
-    function fetchTotalWorkouts(userId) {
-        const totalWorkoutsRef = ref(database, `users/${userId}/totalWorkouts`);
-        onValue(totalWorkoutsRef, (snapshot) => {
-            if (snapshot.exists()) {
-                const totalWorkouts = snapshot.val();
-                updateTotalWorkoutsDisplay(totalWorkouts);
-            } else {
-                updateTotalWorkoutsDisplay(0);
-            }
-        });
-    }
-
-    function updateTotalWorkoutsDisplay(totalWorkouts) {
-        const totalWorkoutsDisplay = document.getElementById('total-workouts');
-        if (totalWorkoutsDisplay) {
-            totalWorkoutsDisplay.textContent = totalWorkouts;
-        }
-    }
-
-    // Fetch total workouts count when dashboard loads
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            fetchTotalWorkouts(user.uid);
+            console.log("No user is authenticated");
+            window.location.href = 'home.html'; // Redirect to login page
         }
     });
 });
 
-   console.log("Script started");
+function fetchTotalCaloriesBurned(userId) {
+    console.log("Attempting to fetch total calories burned for user:", userId);
+    const totalCaloriesRef = ref(database, `users/${userId}/totalCaloriesBurned`);
 
-   document.addEventListener('DOMContentLoaded', (event) => {
-    // Welcome message
+    console.log("Database reference created:", totalCaloriesRef.toString());
+
+    onValue(totalCaloriesRef, (snapshot) => {
+        console.log("onValue callback triggered");
+        if (snapshot.exists()) {
+            const totalCalories = snapshot.val();
+            console.log("Total calories fetched:", totalCalories);
+            updateCaloriesBurnedDisplay(totalCalories);
+        } else {
+            console.log("No total calories data found. Displaying 0.");
+            updateCaloriesBurnedDisplay(0);
+        }
+    }, (error) => {
+        console.error('Error fetching total calories burned:', error);
+    });
+}
+
+function updateCaloriesBurnedDisplay(totalCalories) {
+    console.log("Updating calories burned display with value:", totalCalories);
+    const caloriesBurnedDisplay = document.getElementById('calories-burned');
+    console.log("Element found:", caloriesBurnedDisplay); // Check if the element is found
+    if (caloriesBurnedDisplay) {
+        caloriesBurnedDisplay.textContent = totalCalories;
+        console.log("Calories burned display updated successfully");
+    } else {
+        console.error("Element with ID 'calories-burned' not found");
+    }
+}
+
+
+function fetchExerciseCounts(userId) {
+    const exerciseTypes = ['jumping-jacks', 'squats', 'pushups', 'planks'];
+
+    exerciseTypes.forEach(exerciseType => {
+        const userExerciseRef = ref(database, `users/${userId}/exercises/${exerciseType}`);
+        onValue(userExerciseRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                updateExerciseCountDisplay(exerciseType, data.count);
+            } else {
+                updateExerciseCountDisplay(exerciseType, 0);
+            }
+        });
+    });
+}
+
+function updateExerciseCountDisplay(exerciseType, count) {
+    const countDisplay = document.getElementById(`${exerciseType}-count`);
+    if (countDisplay) {
+        countDisplay.textContent = count;
+    }
+}
+
+// Fetch total workouts count
+function fetchTotalWorkouts(userId) {
+    const totalWorkoutsRef = ref(database, `users/${userId}/totalWorkouts`);
+    onValue(totalWorkoutsRef, (snapshot) => {
+        if (snapshot.exists()) {
+            const totalWorkouts = snapshot.val();
+            updateTotalWorkoutsDisplay(totalWorkouts);
+        } else {
+            updateTotalWorkoutsDisplay(0);
+        }
+    });
+}
+
+function updateTotalWorkoutsDisplay(totalWorkouts) {
+    const totalWorkoutsDisplay = document.getElementById('total-workouts');
+    if (totalWorkoutsDisplay) {
+        totalWorkoutsDisplay.textContent = totalWorkouts;
+    }
+}
+
+// Welcome message
+document.addEventListener('DOMContentLoaded', (event) => {
     const welcomeMessage = document.getElementById('welcomeMessage');
     const currentHour = new Date().getHours();
     let greeting;
@@ -94,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         greeting = "Good evening";
     }
 
-    welcomeMessage.textContent = `${greeting}, User!`;
+    welcomeMessage.textContent = `${greeting}!`;
 
     // Water intake tracker
     let waterIntake = 0;
