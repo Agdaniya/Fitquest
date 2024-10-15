@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (exerciseType === 'jumping-jacks') {
                     jjTotalCount = data.count || 0;
                     jjPreviousCount = jjTotalCount;
-                } else if(exerciseType === 'hand-raises') {
+                } else if(exerciseType === 'arm-raises') {
                     arTotalCount = data.count || 0;
                     arPreviousCount = arTotalCount;
                 } else{
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (exerciseType === 'jumping-jacks') {
             jjCountDisplay.textContent = count;
             totalJJCountDisplay.textContent = `Total: ${count}`;
-        } else if (exerciseType === 'hand-raises') {
+        } else if (exerciseType === 'arm-raises') {
             arCountDisplay.textContent = count;
             totalARCountDisplay.textContent = `Total: ${count}`;
         }else{
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function startTracking(exerciseType) {
         console.log(`Starting ${exerciseType} tracking...`);
-        fetch(`${API_BASE_URL}/track/start-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : (exerciseType === 'lateral-arm-raises' ? 'lateral-arm-raises' : 'arm-circle')}`, { 
+        fetch(`${API_BASE_URL}/track/start-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : (exerciseType === 'arm-raises' ? 'lateral-arm-raises' : 'arm-circle')}`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function stopTracking(exerciseType) {
         console.log(`Stopping ${exerciseType} tracking...`);
-        fetch(`${API_BASE_URL}/track/stop-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : (exerciseType === 'lateral-arm-raises' ? 'lateral-arm-raises' : 'arm-circle')}`, { 
+        fetch(`${API_BASE_URL}/track/stop-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : (exerciseType === 'arm-raises' ? 'arm-raises' : 'arm-circle')}`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -327,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         console.log(`Reset ${exerciseType} button clicked`);
-        fetch(`${API_BASE_URL}/track/reset-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : (exerciseType === 'lateral-arm-raises' ? 'lateral-arm-raises' : 'arm-circle')}`, { 
+        fetch(`${API_BASE_URL}/track/reset-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : (exerciseType === 'arm-raises' ? 'arm-raises' : 'arm-circle')}`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -385,7 +385,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         console.log(`Updating ${exerciseType} count`);
-        fetch(`${API_BASE_URL}/track/get-${exerciseType === 'jumping-jacks' ? 'jumping-jack-count' :  (exerciseType === 'lateral-arm-raises-count' ? 'lateral-arm-raises-count' : 'arm-circle-count')}`)
+        fetch(`${API_BASE_URL}/track/get-${exerciseType === 'jumping-jacks' ? 'jumping-jack-count' :  (exerciseType === 'arm-raises' ? 'lateral-arm-raise-count' : 'arm-circle-count')}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -407,7 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }else{
                         isACTracking = false;
                         startACButton.textContent = 'Start Tracking';
-                        clearInterval(aCupdateInterval);
+                        clearInterval(aCUpdateInterval);
                     }
                     showNotification(`${exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} tracking completed!`, 'success');
                 }
