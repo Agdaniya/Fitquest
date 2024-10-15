@@ -36,8 +36,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const arCountDisplay = document.getElementById('arm-raise-count');
     const totalARCountDisplay = document.getElementById('total-arm-raise-count');
 
+    //Arm Circle Elements
+    const startACButton = document.getElementById('start-arm-circle');
+    const resetACButton = document.getElementById('reset-arm-circle');
+    const aCCountDisplay = document.getElementById('arm-circle-count');
+    const totalACCountDisplay = document.getElementById('total-arm-circle-count');
+
+
     if (!startJJButton || !resetJJButton || !jjCountDisplay || !totalJJCountDisplay ||
-        !startARButton || !resetARButton || !arCountDisplay || !totalARCountDisplay) {
+        !startARButton || !resetARButton || !arCountDisplay || !totalARCountDisplay ||
+        !startACButton || !resetACButton || !aCCountDisplay || !totalACCountDisplay 
+    ) {
         console.error('One or more required elements not found');
         return;
     }
@@ -46,11 +55,16 @@ document.addEventListener('DOMContentLoaded', function() {
     let jjTotalCount = 0;
     let arPreviousCount = 0;
     let arTotalCount = 0;
+    let aCPreviousCount = 0;
+    let aCTotalCount = 0;
     let currentUser = null;
     let isJJTracking = false;
     let isARTracking = false;
+    let isACTracking = false;
     let jjUpdateInterval = null;
     let arUpdateInterval = null;
+    let aCUpdateInterval = null;
+
 
     auth.onAuthStateChanged(user => {
         if (user) {
@@ -64,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
             resetLocalCounters();
             updateDisplays('jumping-jacks', 0);
             updateDisplays('arm-raises', 0);
+            updateDisplays('arm-circle', 0);
         }
     });
 
@@ -72,17 +87,24 @@ document.addEventListener('DOMContentLoaded', function() {
         jjTotalCount = 0;
         arPreviousCount = 0;
         arTotalCount = 0;
+        aCPreviousCount = 0;
+        aCTotalCount = 0;
         isJJTracking = false;
         isARTracking = false;
+        isACTracking = false;
         startJJButton.disabled = false;
         startJJButton.textContent = 'Start Tracking';
         startARButton.disabled = false;
         startARButton.textContent = 'Start Tracking';
+        startACButton.disabled = false;
+        startACButton.textContent = 'Start Tracking';
     }
 
     function fetchInitialCounts() {
         fetchInitialCount('jumping-jacks');
         fetchInitialCount('arm-raises');
+        fetchInitialCount('arm-circle');
+
     }
 
     function fetchInitialCount(exerciseType) {
@@ -93,9 +115,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (exerciseType === 'jumping-jacks') {
                     jjTotalCount = data.count || 0;
                     jjPreviousCount = jjTotalCount;
-                } else {
+                } else if(exerciseType === 'arm-raises') {
                     arTotalCount = data.count || 0;
                     arPreviousCount = arTotalCount;
+                } else{
+                    aCTotalCount = data.count || 0;
+                    aCPreviousCount = aCTotalCount;
                 }
                 updateDisplays(exerciseType, data.count || 0);
                 console.log(`Initial ${exerciseType} count loaded:`, data.count || 0);
@@ -112,14 +137,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (exerciseType === 'jumping-jacks') {
             jjCountDisplay.textContent = count;
             totalJJCountDisplay.textContent = `Total: ${count}`;
-        } else {
+        } else if (exerciseType === 'arm-raises') {
             arCountDisplay.textContent = count;
             totalARCountDisplay.textContent = `Total: ${count}`;
+        }else{
+            aCCountDisplay.textContent = count;
+            totalACCountDisplay.textContent = `Total: ${count}`;
         }
     }
 
     function updateTotalCount(exerciseType, newCount) {
-        if (!currentUser || (exerciseType === 'jumping-jacks' && !isJJTracking) || (exerciseType === 'arm-raises' && !isARTracking)) {
+        if (!currentUser || (exerciseType === 'jumping-jacks' && !isJJTracking) || (exerciseType === 'arm-raises' && !isARTracking) || (exerciseType === 'arm-circle' && !isACTracking)) {
             console.log(`No user logged in or not tracking ${exerciseType}, skipping count update`);
             return;
         }
@@ -134,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateFirebaseCount('jumping-jacks', jjTotalCount);
             }
             jjPreviousCount = newCount;
-        } else {
+        } else if (exerciseType === 'arm-raises'){
             difference = newCount - arPreviousCount;
             if (difference > 0) {
                 arTotalCount += difference;
@@ -143,6 +171,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateFirebaseCount('arm-raises', arTotalCount);
             }
             arPreviousCount = newCount;
+        }else{
+            difference = newCount - aCPreviousCount;
+            if (difference > 0) {
+                aCTotalCount += difference;
+                updateDisplays('arm-circle', aCTotalCount);
+                console.log(`Total arm circle count updated: ${aCTotalCount}`);
+                updateFirebaseCount('arm-circle', aCTotalCount);
+            }
+            aCPreviousCount = newCount;
         }
     }
 
@@ -152,6 +189,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     startARButton.addEventListener('click', function() {
         handleStartStop('arm-raises');
+    });
+
+    startACButton.addEventListener('click', function() {
+        handleStartStop('arm-circle');
     });
 
     function handleStartStop(exerciseType) {
@@ -166,18 +207,24 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 startTracking('jumping-jacks');
             }
-        } else {
+        } else if(exerciseType === 'arm-raises'){
             if (isARTracking) {
                 stopTracking('arm-raises');
             } else {
                 startTracking('arm-raises');
+            }
+        }else {
+            if (isACTracking) {
+                stopTracking('arm-circle');
+            } else {
+                startTracking('arm-circle');
             }
         }
     }
 
     function startTracking(exerciseType) {
         console.log(`Starting ${exerciseType} tracking...`);
-        fetch(`${API_BASE_URL}/track/start-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : 'lateral-arm-raises'}`, { 
+        fetch(`${API_BASE_URL}/track/start-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : (exerciseType === 'arm-raises' ? 'lateral-arm-raises' : 'arm-circle')}`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -198,11 +245,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     startJJButton.textContent = 'Stop Tracking';
                     updateJumpingJackCount();
                     jjUpdateInterval = setInterval(updateJumpingJackCount, 1000);
-                } else {
+                } else if(exerciseType === 'arm-raises') {
                     isARTracking = true;
                     startARButton.textContent = 'Stop Tracking';
                     updateArmRaiseCount();
                     arUpdateInterval = setInterval(updateArmRaiseCount, 1000);
+                }else{
+                    isACTracking = true;
+                    startACButton.textContent = 'Stop Tracking';
+                    updateArmCircleCount();
+                    aCUpdateInterval = setInterval(updateArmCircleCount, 1000);
                 }
             } else {
                 throw new Error('Unexpected response status');
@@ -216,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function stopTracking(exerciseType) {
         console.log(`Stopping ${exerciseType} tracking...`);
-        fetch(`${API_BASE_URL}/track/stop-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : 'lateral-arm-raises'}`, { 
+        fetch(`${API_BASE_URL}/track/stop-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : (exerciseType === 'arm-raises' ? 'arm-raises' : 'arm-circle')}`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -236,10 +288,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     isJJTracking = false;
                     startJJButton.textContent = 'Start Tracking';
                     clearInterval(jjUpdateInterval);
-                } else {
+                } else if (exerciseType=== 'arm-raises'){
                     isARTracking = false;
                     startARButton.textContent = 'Start Tracking';
                     clearInterval(arUpdateInterval);
+                }else{
+                    isACTracking = false;
+                    startACButton.textContent = 'Start Tracking';
+                    clearInterval(aCUpdateInterval);
                 }
                 showNotification(`${exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} tracking stopped`, 'info');
             } else {
@@ -260,6 +316,10 @@ document.addEventListener('DOMContentLoaded', function() {
         resetCount('arm-raises');
     });
 
+    resetACButton.addEventListener('click', function() {
+        resetCount('arm-circle');
+    });
+
     function resetCount(exerciseType) {
         if (!currentUser) {
             showNotification('Please log in to reset your count', 'warning');
@@ -267,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         console.log(`Reset ${exerciseType} button clicked`);
-        fetch(`${API_BASE_URL}/track/reset-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : 'lateral-arm-raises'}`, { 
+        fetch(`${API_BASE_URL}/track/reset-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : (exerciseType === 'arm-raises' ? 'arm-raises' : 'arm-circle')}`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -286,9 +346,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (exerciseType === 'jumping-jacks') {
                     jjPreviousCount = 0;
                     jjTotalCount = 0;
-                } else {
+                } else if(exerciseType === 'arm-raises'){
                     arPreviousCount = 0;
                     arTotalCount = 0;
+                }else{
+                    aCPreviousCount = 0;
+                    aCTotalCount = 0;
                 }
                 updateDisplays(exerciseType, 0);
                 showNotification(`${exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} count has been reset!`, 'success');
@@ -311,14 +374,18 @@ document.addEventListener('DOMContentLoaded', function() {
         updateExerciseCount('arm-raises');
     }
 
+    function updateArmCircleCount() {
+        updateExerciseCount('arm-circle');
+    }
+
     function updateExerciseCount(exerciseType) {
-        if ((exerciseType === 'jumping-jacks' && !isJJTracking) || (exerciseType === 'arm-raises' && !isARTracking)) {
+        if ((exerciseType === 'jumping-jacks' && !isJJTracking) || (exerciseType === 'arm-raises' && !isARTracking) || (exerciseType === 'arm-circle' && !isACTracking)) {
             console.log(`${exerciseType} tracking stopped`);
             return;
         }
 
         console.log(`Updating ${exerciseType} count`);
-        fetch(`${API_BASE_URL}/track/get-${exerciseType === 'jumping-jacks' ? 'jumping-jack-count' : 'lateral-arm-raise-count'}`)
+        fetch(`${API_BASE_URL}/track/get-${exerciseType === 'jumping-jacks' ? 'jumping-jack-count' :  (exerciseType === 'arm-raises' ? 'lateral-arm-raise-count' : 'arm-circle-count')}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -333,10 +400,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         isJJTracking = false;
                         startJJButton.textContent = 'Start Tracking';
                         clearInterval(jjUpdateInterval);
-                    } else {
+                    } else if(exerciseType === 'arm-raises') {
                         isARTracking = false;
                         startARButton.textContent = 'Start Tracking';
                         clearInterval(arUpdateInterval);
+                    }else{
+                        isACTracking = false;
+                        startACButton.textContent = 'Start Tracking';
+                        clearInterval(aCUpdateInterval);
                     }
                     showNotification(`${exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} tracking completed!`, 'success');
                 }
@@ -347,10 +418,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     isJJTracking = false;
                     startJJButton.textContent = 'Start Tracking';
                     clearInterval(jjUpdateInterval);
-                } else {
+                } else if(exerciseType === 'arm-raises'){
                     isARTracking = false;
                     startARButton.textContent = 'Start Tracking';
                     clearInterval(arUpdateInterval);
+                }else{
+                    isACTracking = false;
+                    startACButton.textContent = 'Start Tracking';
+                    clearInterval(aCUpdateInterval);
                 }
                 showNotification(`Error while tracking ${exerciseType}. Please try again.`, 'error');
             });
