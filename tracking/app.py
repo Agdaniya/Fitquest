@@ -10,13 +10,16 @@ CORS(app, resources={r"/*": {"origins": "http://localhost:8000"}})
 
 jumping_jack_count = 0
 lateral_arm_raise_count = 0
+arm_circle_count = 0
 jumping_jack_tracking_process = None
 lateral_arm_raise_tracking_process = None
+arm_circle_tracking_process = None
 is_jumping_jack_tracking = False
 is_lateral_arm_raise_tracking = False
+is_arm_circle_tracking = False
 
 def run_tracking_script(script_name, count_variable):
-    global is_jumping_jack_tracking, is_lateral_arm_raise_tracking
+    global is_jumping_jack_tracking, is_lateral_arm_raise_tracking,is_arm_circle_tracking
     try:
         print(f"Starting {script_name} tracking script...")
         script_path = os.path.join(os.path.dirname(__file__), f'{script_name}.py')
@@ -32,6 +35,8 @@ def run_tracking_script(script_name, count_variable):
             is_jumping_jack_tracking = True
         elif script_name == 'armraises':
             is_lateral_arm_raise_tracking = True
+        elif script_name == 'armcircle':
+            is_arm_circle_tracking = True
         
         while True:
             output = process.stdout.readline()
@@ -47,12 +52,18 @@ def run_tracking_script(script_name, count_variable):
                     new_count = int(output.split(':')[1].strip())
                     globals()[count_variable] = new_count
                     print(f"Updated lateral arm raise count: {globals()[count_variable]}")
+                elif script_name == 'armcircle' and output.startswith('Arm circle Count:'):
+                    new_count = int(output.split(':')[1].strip())
+                    globals()[count_variable] = new_count
+                    print(f"Updated arm circle count: {globals()[count_variable]}")
         
         rc = process.poll()
         if script_name == 'jumpingjacks':
             is_jumping_jack_tracking = False
         elif script_name == 'armraises':
             is_lateral_arm_raise_tracking = False
+        elif script_name == 'armcircle':
+            is_arm_circle_tracking = False
         print(f"Tracking stopped with return code {rc}")
         
         error_output = process.stderr.read()
@@ -65,6 +76,8 @@ def run_tracking_script(script_name, count_variable):
             is_jumping_jack_tracking = False
         elif script_name == 'armraises':
             is_lateral_arm_raise_tracking = False
+        elif script_name == 'armcircle':
+            is_arm_circle_tracking = False
 
 @app.route('/track/start-jumping-jacks', methods=['POST'])
 def start_jumping_jacks():
@@ -98,6 +111,22 @@ def start_lateral_arm_raises():
         is_lateral_arm_raise_tracking = False
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/track/start-arm-circle', methods=['POST'])
+def start_arm_circle():
+    global arm_circle_tracking_process, is_arm_circle_tracking
+    try:
+        if not is_arm_circle_tracking:
+            tracking_thread = threading.Thread(target=run_tracking_script, args=('armcircle', 'arm_circle_count'))
+            tracking_thread.start()
+            print("arm circle tracking thread started")
+            return jsonify({"status": "started"})
+        return jsonify({"status": "already_running"})
+    except Exception as e:
+        print(f"Error in start_arm_circle: {str(e)}")
+        print(traceback.format_exc())
+        is_arm_circle_tracking = False
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/track/stop-jumping-jacks', methods=['POST'])
 def stop_jumping_jacks():
     global is_jumping_jack_tracking
@@ -109,6 +138,13 @@ def stop_lateral_arm_raises():
     global is_lateral_arm_raise_tracking
     is_lateral_arm_raise_tracking = False
     return jsonify({"status": "stopped"})
+
+@app.route('/track/stop-arm-circle', methods=['POST'])
+def stop_arm_circle():
+    global is_arm_circle_tracking
+    is_arm_circle_tracking = False
+    return jsonify({"status": "stopped"})
+
 
 @app.route('/track/get-jumping-jack-count')
 def get_jumping_jack_count():
@@ -126,6 +162,14 @@ def get_lateral_arm_raise_count():
         "status": "running" if is_lateral_arm_raise_tracking else "stopped"
     })
 
+@app.route('/track/get-arm-circle-count')
+def get_arm_circle_count():
+    global arm_circle_count, is_arm_circle_tracking
+    return jsonify({
+        "count": arm_circle_count,
+        "status": "running" if is_arm_circle_tracking else "stopped"
+    })
+
 @app.route('/track/reset-jumping-jacks', methods=['POST'])
 def reset_jumping_jacks():
     global jumping_jack_count
@@ -138,6 +182,13 @@ def reset_lateral_arm_raises():
     global lateral_arm_raise_count
     lateral_arm_raise_count = 0
     print("Lateral arm raise count reset to 0")
+    return jsonify({"status": "reset"})
+
+@app.route('/track/reset-arm-circle', methods=['POST'])
+def reset_arm_circle():
+    global arm_circle_count
+    arm_circle_count = 0
+    print("arm circle count reset to 0")
     return jsonify({"status": "reset"})
 
 if __name__ == '__main__':
