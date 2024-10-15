@@ -43,19 +43,19 @@
               <div class="exercise-card">
                 <h3>Hand Raise</h3>
                 <img src="asset/handr2.png" alt="Hand Raise" class="exercise-image">
-                <div id="hand-raise-count" class="exercise-count">0</div>
-                <div id="total-hand-raise-count" class="total-exercise-count">Total: 0</div>
-                <button id="start-hand-raise" class="tracking-button">Start Tracking</button>
-                <button id="reset-hand-raise" class="reset-button">Reset Count</button>
+                <div id="arm-raise-count" class="exercise-count">0</div>
+                <div id="total-arm-raise-count" class="total-exercise-count">Total: 0</div>
+                <button id="start-arm-raises" class="tracking-button">Start Tracking</button>
+                <button id="reset-arm-raises" class="reset-button">Reset Count</button>
               </div>
   
               <div class="exercise-card">
                 <h3>Hand Circle</h3>
                 <img src="asset/handcircle.png" alt="Hand Circle" class="exercise-image">
-                <div id="hand-circle-count" class="exercise-count">0</div>
-                <div id="total-hand-circle-count" class="total-exercise-count">Total: 0</div>
-                <button id="start-hand-circle" class="tracking-button">Start Tracking</button>
-                <button id="reset-hand-circle" class="reset-button">Reset Count</button>
+                <div id="arm-circle-count" class="exercise-count">0</div>
+                <div id="total-arm-circle-count" class="total-exercise-count">Total: 0</div>
+                <button id="start-arm-circle" class="tracking-button">Start Tracking</button>
+                <button id="reset-arm-circle" class="reset-button">Reset Count</button>
               </div>
 
               <div class="exercise-card">
@@ -84,6 +84,14 @@
           </div>
       </div>
   </div>
+  <!-- Load Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+<!-- Load your JavaScript as a module -->
+  
+  <!-- Your tracker.js file -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="./js/tracker.js"></script>
 
