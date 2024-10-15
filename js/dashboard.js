@@ -124,6 +124,7 @@ function updateTotalWorkoutsDisplay(totalWorkouts) {
 function updateLoginStreak(userId) {
     const userRef = ref(database, `users/${userId}`);
     const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
 
     get(userRef).then((snapshot) => {
         if (snapshot.exists()) {
@@ -132,16 +133,16 @@ function updateLoginStreak(userId) {
             const currentStreak = userData.loginStreak || 0;
 
             if (lastLogin !== today) {
-                let newStreak = (lastLogin === new Date(Date.now() - 86400000).toDateString())
-                    ? currentStreak + 1
-                    : 1;
+                let newStreak = (lastLogin === yesterday) ? currentStreak + 1 : 1;
 
                 update(userRef, {
                     lastLogin: today,
                     loginStreak: newStreak
+                }).then(() => {
+                    updateLoginStreakDisplay(newStreak);
+                }).catch((error) => {
+                    console.error("Error updating user data:", error);
                 });
-
-                updateLoginStreakDisplay(newStreak);
             } else {
                 updateLoginStreakDisplay(currentStreak);
             }
@@ -149,11 +150,14 @@ function updateLoginStreak(userId) {
             set(userRef, {
                 lastLogin: today,
                 loginStreak: 1
+            }).then(() => {
+                updateLoginStreakDisplay(1);
+            }).catch((error) => {
+                console.error("Error setting user data:", error);
             });
-            updateLoginStreakDisplay(1);
         }
     }).catch((error) => {
-        console.error("Error updating login streak:", error);
+        console.error("Error fetching user data:", error);
     });
 }
 
