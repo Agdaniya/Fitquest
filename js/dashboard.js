@@ -80,85 +80,96 @@ document.addEventListener('DOMContentLoaded', function() {
 
    console.log("Script started");
 
-        // Welcome message
-        const welcomeMessage = document.getElementById('welcomeMessage');
-        const currentHour = new Date().getHours();
-        let greeting;
+   document.addEventListener('DOMContentLoaded', (event) => {
+    // Welcome message
+    const welcomeMessage = document.getElementById('welcomeMessage');
+    const currentHour = new Date().getHours();
+    let greeting;
 
-        if (currentHour < 12) {
-            greeting = "Good morning";
-        } else if (currentHour < 18) {
-            greeting = "Good afternoon";
-        } else {
-            greeting = "Good evening";
+    if (currentHour < 12) {
+        greeting = "Good morning";
+    } else if (currentHour < 18) {
+        greeting = "Good afternoon";
+    } else {
+        greeting = "Good evening";
+    }
+
+    welcomeMessage.textContent = `${greeting}, User!`;
+
+    // Water intake tracker
+    let waterIntake = 0;
+    const waterLevel = document.getElementById('waterLevel');
+    const waterAmount = document.getElementById('waterAmount');
+
+    // Check if there's water intake data in localStorage
+    if (localStorage.getItem('waterIntake')) {
+        waterIntake = parseInt(localStorage.getItem('waterIntake'));
+        console.log("Restored water intake from localStorage:", waterIntake);
+        updateWaterDisplay();
+    }
+
+    console.log("Initial water intake:", waterIntake);
+
+    // Add event listeners for each button
+    document.getElementById('hundred').addEventListener('click', () => addWater(100));
+    document.getElementById('twofifty').addEventListener('click', () => addWater(250));
+    document.getElementById('fivehundred').addEventListener('click', () => addWater(500));
+    document.getElementById('reset').addEventListener('click', resetWaterIntake); // Reset button listener
+
+    function addWater(amount) {
+        console.log("addWater called with amount:", amount);
+        waterIntake += amount;
+        console.log("New water intake:", waterIntake);
+
+        // Store updated water intake in localStorage
+        localStorage.setItem('waterIntake', waterIntake);
+
+        updateWaterDisplay();
+        showNotification(`Great job! You've added ${amount}ml of water.`);
+    }
+
+    function updateWaterDisplay() {
+        console.log("updateWaterDisplay called");
+        const maxHeight = 300; // Height of the water container
+        const maxWater = 2000; // Set a max water intake (e.g., 2 liters)
+        const height = Math.min((waterIntake / maxWater) * maxHeight, maxHeight);
+
+        console.log("Calculated height:", height);
+        waterLevel.style.height = `${height}px`;
+        waterAmount.textContent = `${waterIntake} ml`;
+        console.log("Updated water amount text:", waterAmount.textContent);
+
+        // Add some fun messages based on water intake
+        if (waterIntake >= 2000) {
+            showNotification("Wow! You're a hydration superstar! 🌊");
+        } else if (waterIntake >= 1500) {
+            showNotification("You're doing great! Keep it flowing! 💧");
+        } else if (waterIntake >= 1000) {
+            showNotification("Halfway there! You're making waves! 🌊");
+        } else if (waterIntake >= 500) {
+            showNotification("Nice start! Keep sipping! 💦");
         }
+    }
 
-        welcomeMessage.textContent = `${greeting}, User!`;
+    function resetWaterIntake() {
+        console.log("resetWaterIntake called");
+        waterIntake = 0; // Reset the water intake to 0
+        localStorage.setItem('waterIntake', waterIntake); // Reset in localStorage
+        updateWaterDisplay();
+        showNotification("Water intake has been reset.");
+    }
 
-        document.addEventListener('DOMContentLoaded', (event) => {
-            // Add event listeners for each button
-            document.getElementById('hundred').addEventListener('click', () => addWater(100));
-            document.getElementById('twofifty').addEventListener('click', () => addWater(250));
-            document.getElementById('fivehundred').addEventListener('click', () => addWater(500));
-            document.getElementById('reset').addEventListener('click',()=> resetWaterIntake);
+    function showNotification(message) {
+        console.log("showNotification called with message:", message);
+        const notificationContainer = document.getElementById('notification-container');
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.textContent = message;
+        notificationContainer.appendChild(notification);
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
 
-        // Water intake tracker
-        let waterIntake = 0;
-        const waterLevel = document.getElementById('waterLevel');
-        const waterAmount = document.getElementById('waterAmount');
-
-        console.log("Initial water intake:", waterIntake);
-        console.log("Water level element:", waterLevel);
-        console.log("Water amount element:", waterAmount);
-
-        function addWater(amount) {
-            console.log("addWater called with amount:", amount);
-            waterIntake += amount;
-            console.log("New water intake:", waterIntake);
-            updateWaterDisplay();
-            showNotification(`Great job! You've added ${amount}ml of water.`);
-        }
-
-        function updateWaterDisplay() {
-            console.log("updateWaterDisplay called");
-            const maxHeight = 300; // Height of the water container
-            const maxWater = 2000; // Set a max water intake (e.g., 2 liters)
-            const height = Math.min((waterIntake / maxWater) * maxHeight, maxHeight);
-            
-            console.log("Calculated height:", height);
-            waterLevel.style.height = `${height}px`;
-            waterAmount.textContent = `${waterIntake} ml`;
-            console.log("Updated water amount text:", waterAmount.textContent);
-
-            // Add some fun messages based on water intake
-            if (waterIntake >= 2000) {
-                showNotification("Wow! You're a hydration superstar! 🌊");
-            } else if (waterIntake >= 1500) {
-                showNotification("You're doing great! Keep it flowing! 💧");
-            } else if (waterIntake >= 1000) {
-                showNotification("Halfway there! You're making waves! 🌊");
-            } else if (waterIntake >= 500) {
-                showNotification("Nice start! Keep sipping! 💦");
-            }
-        }
-
-        function resetWaterIntake() {
-            console.log("resetWaterIntake called");
-            waterIntake = 0; // Reset the water intake to 0
-            updateWaterDisplay();
-            showNotification("Water intake has been reset.");
-        }
-        function showNotification(message) {
-            console.log("showNotification called with message:", message);
-            const notificationContainer = document.getElementById('notification-container');
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.textContent = message;
-            notificationContainer.appendChild(notification);
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
-
-        console.log("Script finished loading");
-        });
+    console.log("Script finished loading");
+});
