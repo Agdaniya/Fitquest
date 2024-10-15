@@ -173,3 +173,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log("Script finished loading");
 });
+
+const cards = document.querySelectorAll('.stat-card');
+cards.forEach(card => {
+    card.addEventListener('click', () => {
+        card.querySelector('.card-inner').style.transform = 
+            card.querySelector('.card-inner').style.transform === 'rotateY(180deg)' 
+                ? 'rotateY(0deg)' 
+                : 'rotateY(180deg)';
+    });
+});
