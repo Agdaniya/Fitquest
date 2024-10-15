@@ -1,0 +1,231 @@
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded and parsed');
+
+    const API_BASE_URL = 'http://localhost:5000';
+
+    const startButton = document.getElementById('start-hand-raise');
+    const resetButton = document.getElementById('reset-hand-raise');
+    const countDisplay = document.getElementById('hand-raise-count');
+    const totalCountDisplay = document.getElementById('total-hand-raise-count');
+
+    if (!startButton || !resetButton || !countDisplay || !totalCountDisplay) {
+        console.error('One or more required elements not found');
+        return;
+    }
+
+    let previousCount = 0;
+    let totalCount = 0;
+    let currentUser = null;
+    let isTracking = false;
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            console.log('User logged in, fetching initial count');
+            resetLocalCounters();
+            fetchInitialCount();
+        } else {
+            console.log('No user logged in');
+            currentUser = null;
+            resetLocalCounters();
+            updateDisplays(0);
+        }
+    });
+
+    function resetLocalCounters() {
+        previousCount = 0;
+        totalCount = 0;
+        isTracking = false;
+        startButton.disabled = false;
+        startButton.textContent = 'Start Tracking';
+    }
+
+    function fetchInitialCount() {
+        const userExerciseRef = ref(database, `users/${currentUser.uid}/exercises/hand-raise`);
+        get(userExerciseRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                totalCount = data.count || 0;
+                previousCount = totalCount;
+                updateDisplays(totalCount);
+                console.log('Initial count loaded:', totalCount);
+            } else {
+                console.log('No existing count found for user');
+                totalCount = 0;
+                previousCount = 0;
+                updateDisplays(0);
+            }
+        }).catch((error) => {
+            console.error('Error fetching initial count:', error);
+        });
+    }
+
+    function updateDisplays(count) {
+        countDisplay.textContent = count;
+        totalCountDisplay.textContent = `Total: ${count}`;
+    }
+
+    function updateTotalCount(newCount) {
+        if (!currentUser || !isTracking) {
+            console.log('No user logged in or not tracking, skipping count update');
+            return;
+        }
+
+        const difference = newCount - previousCount;
+        if (difference > 0) {
+            totalCount += difference;
+            updateDisplays(totalCount);
+            console.log(`Total count updated: ${totalCount}`);
+            updateFirebaseCount('hand-raise', totalCount);
+        }
+        previousCount = newCount;
+    }
+
+    startButton.addEventListener('click', function() {
+        if (!currentUser) {
+            showNotification('Please log in to track your exercises', 'warning');
+            return;
+        }
+
+        console.log('Start button clicked');
+        fetch(`${API_BASE_URL}/track/start-hand-raise`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data received:', data);
+            if (data.status === 'started') {
+                this.disabled = true;
+                this.textContent = 'Tracking...';
+                isTracking = true;
+                updateHandRaise();
+            } else if (data.status === 'already_running') {
+                showNotification('Tracking is already in progress!', 'warning');
+                isTracking = true;
+                updateHandRaise();
+            } else {
+                throw new Error('Unexpected response status');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to start tracking. Please try again.', 'error');
+        });
+    });
+
+    resetButton.addEventListener('click', function() {
+        if (!currentUser) {
+            showNotification('Please log in to reset your count', 'warning');
+            return;
+        }
+
+        console.log('Reset button clicked');
+        fetch(`${API_BASE_URL}/track/reset-hand-raise`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data received:', data);
+            if (data.status === 'reset') {
+                resetLocalCounters();
+                updateDisplays(0);
+                showNotification('Hand raise count has been reset!', 'success');
+                updateFirebaseCount('Hand raise', 0);
+            } else {
+                throw new Error('Unexpected response status');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to reset count. Please try again.', 'error');
+        });
+    });
+
+    function updateHandRaise() {
+        if (!isTracking) {
+            console.log('Tracking stopped');
+            return;
+        }
+
+        console.log('Updating hand raise count');
+        fetch(`${API_BASE_URL}/track/get-hand-raise-count`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Count data received:', data);
+                updateTotalCount(data.count);
+                if (data.status === 'running' && isTracking) {
+                    setTimeout(updateHandRaise, 1000);
+                } else {
+                    isTracking = false;
+                    startButton.disabled = false;
+                    startButton.textContent = 'Start Tracking';
+                    showNotification('Jumping Jack tracking completed!', 'success');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                isTracking = false;
+                startButton.disabled = false;
+                startButton.textContent = 'Start Tracking';
+                showNotification('Error while tracking. Please try again.', 'error');
+            });
+    }
+
+    function showNotification(message, type = 'info') {
+        console.log(`Notification: ${message} (${type})`);
+        const notificationContainer = document.getElementById('notification-container');
+        if (!notificationContainer) {
+            console.error('Notification container not found');
+            return;
+        }
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        notificationContainer.appendChild(notification);
+        setTimeout(() => {
+            notification.classList.add('fade-out');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 5000);
+    }
+
+    function updateFirebaseCount(exerciseType, count) {
+        if (!currentUser) {
+            console.log('No user logged in, skipping Firebase update');
+            return;
+        }
+
+        set(ref(database, `users/${currentUser.uid}/exercises/${exerciseType}`), {
+            count: count,
+            lastUpdated: Date.now()
+        }).then(() => {
+            console.log('Firebase updated successfully');
+        }).catch(error => {
+            console.error('Error updating Firebase:', error);
+        });
+    }
+});

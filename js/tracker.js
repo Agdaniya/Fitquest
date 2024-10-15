@@ -24,92 +24,160 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const API_BASE_URL = 'http://localhost:5000';
 
-    const startButton = document.getElementById('start-jumping-jacks');
-    const resetButton = document.getElementById('reset-jumping-jacks');
-    const countDisplay = document.getElementById('jumping-jack-count');
-    const totalCountDisplay = document.getElementById('total-jumping-jack-count');
+    // Jumping Jacks Elements
+    const startJJButton = document.getElementById('start-jumping-jacks');
+    const resetJJButton = document.getElementById('reset-jumping-jacks');
+    const jjCountDisplay = document.getElementById('jumping-jack-count');
+    const totalJJCountDisplay = document.getElementById('total-jumping-jack-count');
 
-    if (!startButton || !resetButton || !countDisplay || !totalCountDisplay) {
+    // Arm Raises Elements
+    const startARButton = document.getElementById('start-arm-raises');
+    const resetARButton = document.getElementById('reset-arm-raises');
+    const arCountDisplay = document.getElementById('arm-raise-count');
+    const totalARCountDisplay = document.getElementById('total-arm-raise-count');
+
+    if (!startJJButton || !resetJJButton || !jjCountDisplay || !totalJJCountDisplay ||
+        !startARButton || !resetARButton || !arCountDisplay || !totalARCountDisplay) {
         console.error('One or more required elements not found');
         return;
     }
 
-    let previousCount = 0;
-    let totalCount = 0;
+    let jjPreviousCount = 0;
+    let jjTotalCount = 0;
+    let arPreviousCount = 0;
+    let arTotalCount = 0;
     let currentUser = null;
-    let isTracking = false;
+    let isJJTracking = false;
+    let isARTracking = false;
+    let jjUpdateInterval = null;
+    let arUpdateInterval = null;
 
     auth.onAuthStateChanged(user => {
         if (user) {
             currentUser = user;
-            console.log('User logged in, fetching initial count');
+            console.log('User logged in, fetching initial counts');
             resetLocalCounters();
-            fetchInitialCount();
+            fetchInitialCounts();
         } else {
             console.log('No user logged in');
             currentUser = null;
             resetLocalCounters();
-            updateDisplays(0);
+            updateDisplays('jumping-jacks', 0);
+            updateDisplays('arm-raises', 0);
         }
     });
 
     function resetLocalCounters() {
-        previousCount = 0;
-        totalCount = 0;
-        isTracking = false;
-        startButton.disabled = false;
-        startButton.textContent = 'Start Tracking';
+        jjPreviousCount = 0;
+        jjTotalCount = 0;
+        arPreviousCount = 0;
+        arTotalCount = 0;
+        isJJTracking = false;
+        isARTracking = false;
+        startJJButton.disabled = false;
+        startJJButton.textContent = 'Start Tracking';
+        startARButton.disabled = false;
+        startARButton.textContent = 'Start Tracking';
     }
 
-    function fetchInitialCount() {
-        const userExerciseRef = ref(database, `users/${currentUser.uid}/exercises/jumping-jacks`);
+    function fetchInitialCounts() {
+        fetchInitialCount('jumping-jacks');
+        fetchInitialCount('arm-raises');
+    }
+
+    function fetchInitialCount(exerciseType) {
+        const userExerciseRef = ref(database, `users/${currentUser.uid}/exercises/${exerciseType}`);
         get(userExerciseRef).then((snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                totalCount = data.count || 0;
-                previousCount = totalCount;
-                updateDisplays(totalCount);
-                console.log('Initial count loaded:', totalCount);
+                if (exerciseType === 'jumping-jacks') {
+                    jjTotalCount = data.count || 0;
+                    jjPreviousCount = jjTotalCount;
+                } else {
+                    arTotalCount = data.count || 0;
+                    arPreviousCount = arTotalCount;
+                }
+                updateDisplays(exerciseType, data.count || 0);
+                console.log(`Initial ${exerciseType} count loaded:`, data.count || 0);
             } else {
-                console.log('No existing count found for user');
-                totalCount = 0;
-                previousCount = 0;
-                updateDisplays(0);
+                console.log(`No existing count found for user (${exerciseType})`);
+                updateDisplays(exerciseType, 0);
             }
         }).catch((error) => {
-            console.error('Error fetching initial count:', error);
+            console.error(`Error fetching initial count (${exerciseType}):`, error);
         });
     }
 
-    function updateDisplays(count) {
-        countDisplay.textContent = count;
-        totalCountDisplay.textContent = `Total: ${count}`;
+    function updateDisplays(exerciseType, count) {
+        if (exerciseType === 'jumping-jacks') {
+            jjCountDisplay.textContent = count;
+            totalJJCountDisplay.textContent = `Total: ${count}`;
+        } else {
+            arCountDisplay.textContent = count;
+            totalARCountDisplay.textContent = `Total: ${count}`;
+        }
     }
 
-    function updateTotalCount(newCount) {
-        if (!currentUser || !isTracking) {
-            console.log('No user logged in or not tracking, skipping count update');
+    function updateTotalCount(exerciseType, newCount) {
+        if (!currentUser || (exerciseType === 'jumping-jacks' && !isJJTracking) || (exerciseType === 'arm-raises' && !isARTracking)) {
+            console.log(`No user logged in or not tracking ${exerciseType}, skipping count update`);
             return;
         }
 
-        const difference = newCount - previousCount;
-        if (difference > 0) {
-            totalCount += difference;
-            updateDisplays(totalCount);
-            console.log(`Total count updated: ${totalCount}`);
-            updateFirebaseCount('jumping-jacks', totalCount);
+        let difference, totalCount;
+        if (exerciseType === 'jumping-jacks') {
+            difference = newCount - jjPreviousCount;
+            if (difference > 0) {
+                jjTotalCount += difference;
+                updateDisplays('jumping-jacks', jjTotalCount);
+                console.log(`Total jumping jacks count updated: ${jjTotalCount}`);
+                updateFirebaseCount('jumping-jacks', jjTotalCount);
+            }
+            jjPreviousCount = newCount;
+        } else {
+            difference = newCount - arPreviousCount;
+            if (difference > 0) {
+                arTotalCount += difference;
+                updateDisplays('arm-raises', arTotalCount);
+                console.log(`Total arm raises count updated: ${arTotalCount}`);
+                updateFirebaseCount('arm-raises', arTotalCount);
+            }
+            arPreviousCount = newCount;
         }
-        previousCount = newCount;
     }
 
-    startButton.addEventListener('click', function() {
+    startJJButton.addEventListener('click', function() {
+        handleStartStop('jumping-jacks');
+    });
+
+    startARButton.addEventListener('click', function() {
+        handleStartStop('arm-raises');
+    });
+
+    function handleStartStop(exerciseType) {
         if (!currentUser) {
             showNotification('Please log in to track your exercises', 'warning');
             return;
         }
 
-        console.log('Start button clicked');
-        fetch(`${API_BASE_URL}/track/start-jumping-jacks`, { 
+        if (exerciseType === 'jumping-jacks') {
+            if (isJJTracking) {
+                stopTracking('jumping-jacks');
+            } else {
+                startTracking('jumping-jacks');
+            }
+        } else {
+            if (isARTracking) {
+                stopTracking('arm-raises');
+            } else {
+                startTracking('arm-raises');
+            }
+        }
+    }
+
+    function startTracking(exerciseType) {
+        console.log(`Starting ${exerciseType} tracking...`);
+        fetch(`${API_BASE_URL}/track/start-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : 'lateral-arm-raises'}`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -124,33 +192,82 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             console.log('Data received:', data);
-            if (data.status === 'started') {
-                this.disabled = true;
-                this.textContent = 'Tracking...';
-                isTracking = true;
-                updateJumpingJackCount();
-            } else if (data.status === 'already_running') {
-                showNotification('Tracking is already in progress!', 'warning');
-                isTracking = true;
-                updateJumpingJackCount();
+            if (data.status === 'started' || data.status === 'already_running') {
+                if (exerciseType === 'jumping-jacks') {
+                    isJJTracking = true;
+                    startJJButton.textContent = 'Stop Tracking';
+                    updateJumpingJackCount();
+                    jjUpdateInterval = setInterval(updateJumpingJackCount, 1000);
+                } else {
+                    isARTracking = true;
+                    startARButton.textContent = 'Stop Tracking';
+                    updateArmRaiseCount();
+                    arUpdateInterval = setInterval(updateArmRaiseCount, 1000);
+                }
             } else {
                 throw new Error('Unexpected response status');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showNotification('Failed to start tracking. Please try again.', 'error');
+            showNotification(`Failed to start ${exerciseType} tracking. Please try again.`, 'error');
         });
+    }
+
+    function stopTracking(exerciseType) {
+        console.log(`Stopping ${exerciseType} tracking...`);
+        fetch(`${API_BASE_URL}/track/stop-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : 'lateral-arm-raises'}`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data received:', data);
+            if (data.status === 'stopped' || data.status === 'not_running') {
+                if (exerciseType === 'jumping-jacks') {
+                    isJJTracking = false;
+                    startJJButton.textContent = 'Start Tracking';
+                    clearInterval(jjUpdateInterval);
+                } else {
+                    isARTracking = false;
+                    startARButton.textContent = 'Start Tracking';
+                    clearInterval(arUpdateInterval);
+                }
+                showNotification(`${exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} tracking stopped`, 'info');
+            } else {
+                throw new Error('Unexpected response status');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification(`Failed to stop ${exerciseType} tracking. Please try again.`, 'error');
+        });
+    }
+
+    resetJJButton.addEventListener('click', function() {
+        resetCount('jumping-jacks');
     });
 
-    resetButton.addEventListener('click', function() {
+    resetARButton.addEventListener('click', function() {
+        resetCount('arm-raises');
+    });
+
+    function resetCount(exerciseType) {
         if (!currentUser) {
             showNotification('Please log in to reset your count', 'warning');
             return;
         }
 
-        console.log('Reset button clicked');
-        fetch(`${API_BASE_URL}/track/reset-jumping-jacks`, { 
+        console.log(`Reset ${exerciseType} button clicked`);
+        fetch(`${API_BASE_URL}/track/reset-${exerciseType === 'jumping-jacks' ? 'jumping-jacks' : 'lateral-arm-raises'}`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -166,28 +283,42 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             console.log('Data received:', data);
             if (data.status === 'reset') {
-                resetLocalCounters();
-                updateDisplays(0);
-                showNotification('Jumping Jack count has been reset!', 'success');
-                updateFirebaseCount('jumping-jacks', 0);
+                if (exerciseType === 'jumping-jacks') {
+                    jjPreviousCount = 0;
+                    jjTotalCount = 0;
+                } else {
+                    arPreviousCount = 0;
+                    arTotalCount = 0;
+                }
+                updateDisplays(exerciseType, 0);
+                showNotification(`${exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} count has been reset!`, 'success');
+                updateFirebaseCount(exerciseType, 0);
             } else {
                 throw new Error('Unexpected response status');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showNotification('Failed to reset count. Please try again.', 'error');
+            showNotification(`Failed to reset ${exerciseType} count. Please try again.`, 'error');
         });
-    });
+    }
 
     function updateJumpingJackCount() {
-        if (!isTracking) {
-            console.log('Tracking stopped');
+        updateExerciseCount('jumping-jacks');
+    }
+
+    function updateArmRaiseCount() {
+        updateExerciseCount('arm-raises');
+    }
+
+    function updateExerciseCount(exerciseType) {
+        if ((exerciseType === 'jumping-jacks' && !isJJTracking) || (exerciseType === 'arm-raises' && !isARTracking)) {
+            console.log(`${exerciseType} tracking stopped`);
             return;
         }
 
-        console.log('Updating jumping jack count');
-        fetch(`${API_BASE_URL}/track/get-jumping-jack-count`)
+        console.log(`Updating ${exerciseType} count`);
+        fetch(`${API_BASE_URL}/track/get-${exerciseType === 'jumping-jacks' ? 'jumping-jack-count' : 'lateral-arm-raise-count'}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -196,22 +327,32 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 console.log('Count data received:', data);
-                updateTotalCount(data.count);
-                if (data.status === 'running' && isTracking) {
-                    setTimeout(updateJumpingJackCount, 1000);
-                } else {
-                    isTracking = false;
-                    startButton.disabled = false;
-                    startButton.textContent = 'Start Tracking';
-                    showNotification('Jumping Jack tracking completed!', 'success');
+                updateTotalCount(exerciseType, data.count);
+                if (data.status !== 'running') {
+                    if (exerciseType === 'jumping-jacks') {
+                        isJJTracking = false;
+                        startJJButton.textContent = 'Start Tracking';
+                        clearInterval(jjUpdateInterval);
+                    } else {
+                        isARTracking = false;
+                        startARButton.textContent = 'Start Tracking';
+                        clearInterval(arUpdateInterval);
+                    }
+                    showNotification(`${exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} tracking completed!`, 'success');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                isTracking = false;
-                startButton.disabled = false;
-                startButton.textContent = 'Start Tracking';
-                showNotification('Error while tracking. Please try again.', 'error');
+                if (exerciseType === 'jumping-jacks') {
+                    isJJTracking = false;
+                    startJJButton.textContent = 'Start Tracking';
+                    clearInterval(jjUpdateInterval);
+                } else {
+                    isARTracking = false;
+                    startARButton.textContent = 'Start Tracking';
+                    clearInterval(arUpdateInterval);
+                }
+                showNotification(`Error while tracking ${exerciseType}. Please try again.`, 'error');
             });
     }
 
@@ -244,9 +385,9 @@ document.addEventListener('DOMContentLoaded', function() {
             count: count,
             lastUpdated: Date.now()
         }).then(() => {
-            console.log('Firebase updated successfully');
+            console.log(`Firebase updated successfully for ${exerciseType}`);
         }).catch(error => {
-            console.error('Error updating Firebase:', error);
+            console.error(`Error updating Firebase for ${exerciseType}:`, error);
         });
     }
 });
