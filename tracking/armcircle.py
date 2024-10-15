@@ -27,7 +27,7 @@ confidence_threshold = 0.6  # Confidence threshold for detection
 # Define stages of arm circle
 STAGE_START = 0
 STAGE_ABOVE_HEAD = 1
-STAGE_SIDE = 2
+STAGE_BEHIND = 2
 STAGE_BELOW_HIP = 3
 
 current_stage = STAGE_START
@@ -66,13 +66,13 @@ while cap.isOpened():
             if current_stage == STAGE_START and left_wrist.y < left_ear.y:
                 current_stage = STAGE_ABOVE_HEAD
                 print("Hand above head")
-            elif current_stage == STAGE_ABOVE_HEAD and left_wrist.y > left_shoulder.y and left_wrist.y < left_hip.y:
-                current_stage = STAGE_SIDE
-                print("Hand at side")
-            elif current_stage == STAGE_SIDE and left_wrist.y > left_hip.y:
+            elif current_stage == STAGE_ABOVE_HEAD and left_wrist.x < left_shoulder.x:
+                current_stage = STAGE_BEHIND
+                print("Hand behind")
+            elif current_stage == STAGE_BEHIND and left_wrist.y > left_hip.y:
                 current_stage = STAGE_BELOW_HIP
                 print("Hand below hip")
-            elif current_stage == STAGE_BELOW_HIP and left_wrist.y < left_shoulder.y:
+            elif current_stage == STAGE_BELOW_HIP and left_wrist.x > left_shoulder.x:
                 current_stage = STAGE_START
                 total_arm_circles += 1
                 print(f"Arm Circle Count: {total_arm_circles}")
