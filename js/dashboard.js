@@ -166,6 +166,8 @@ function updateLoginStreakDisplay(streak) {
 
 function initializeWelcomeMessage() {
     const welcomeMessage = document.getElementById('welcomeMessage');
+    const todaysGoal = document.getElementById('todaysGoals');
+    
     const currentHour = new Date().getHours();
     let greeting;
 

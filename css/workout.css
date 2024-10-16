@@ -116,6 +116,44 @@ body {
     background-color: var(--light-accent);
 }
 
+.exercise-card {
+    background-color: var(--background-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.exercise-card:hover {
+    transform: translateY(-5px);
+}
+
+.exercise-card img {
+    width: 80px;
+    height: 80px;
+    margin-right: 20px;
+}
+
+.exercise-info {
+    flex-grow: 1;
+}
+
+.exercise-card h3 {
+    font-size: 18px;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+}
+
+.exercise-card p {
+    padding: 10px;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+
 .goal-button button {
     padding: 10px 20px;
     font-size: 16px;

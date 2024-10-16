@@ -136,6 +136,7 @@ h1 {
 }
 
 .exercise-card p {
+    padding: 10px;
     font-size: 14px;
     color: var(--text-color);
 }
