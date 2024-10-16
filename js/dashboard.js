@@ -2,7 +2,7 @@ console.log("Script starting execution");
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import { getDatabase, ref, onValue, get, set, update } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 console.log("Imports completed");
 
@@ -32,12 +32,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (user) {
             console.log("User is logged in:", user.uid);
             fetchTotalCaloriesBurned(user.uid);
-            fetchTotalWorkouts(user.uid); // Moved this to combine with user check
+            fetchTotalWorkouts(user.uid);
+            updateLoginStreak(user.uid);
+            fetchExerciseCounts(user.uid);
+            initializeWaterIntakeTracker();
+            initializeWelcomeMessage();
         } else {
             console.log("No user is authenticated");
             window.location.href = 'home.html'; // Redirect to login page
         }
     });
+
+    initializeCardFlipListeners();
 });
 
 function fetchTotalCaloriesBurned(userId) {
@@ -64,7 +70,7 @@ function fetchTotalCaloriesBurned(userId) {
 function updateCaloriesBurnedDisplay(totalCalories) {
     console.log("Updating calories burned display with value:", totalCalories);
     const caloriesBurnedDisplay = document.getElementById('calories-burned');
-    console.log("Element found:", caloriesBurnedDisplay); // Check if the element is found
+    console.log("Element found:", caloriesBurnedDisplay);
     if (caloriesBurnedDisplay) {
         caloriesBurnedDisplay.textContent = totalCalories;
         console.log("Calories burned display updated successfully");
@@ -72,7 +78,6 @@ function updateCaloriesBurnedDisplay(totalCalories) {
         console.error("Element with ID 'calories-burned' not found");
     }
 }
-
 
 function fetchExerciseCounts(userId) {
     const exerciseTypes = ['jumping-jacks', 'squats', 'pushups', 'planks'];
@@ -97,7 +102,6 @@ function updateExerciseCountDisplay(exerciseType, count) {
     }
 }
 
-// Fetch total workouts count
 function fetchTotalWorkouts(userId) {
     const totalWorkoutsRef = ref(database, `users/${userId}/totalWorkouts`);
     onValue(totalWorkoutsRef, (snapshot) => {
@@ -117,8 +121,50 @@ function updateTotalWorkoutsDisplay(totalWorkouts) {
     }
 }
 
-// Welcome message
-document.addEventListener('DOMContentLoaded', (event) => {
+function updateLoginStreak(userId) {
+    const userRef = ref(database, `users/${userId}`);
+    const today = new Date().toDateString();
+
+    get(userRef).then((snapshot) => {
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            const lastLogin = userData.lastLogin || '';
+            const currentStreak = userData.loginStreak || 0;
+
+            if (lastLogin !== today) {
+                let newStreak = (lastLogin === new Date(Date.now() - 86400000).toDateString())
+                    ? currentStreak + 1
+                    : 1;
+
+                update(userRef, {
+                    lastLogin: today,
+                    loginStreak: newStreak
+                });
+
+                updateLoginStreakDisplay(newStreak);
+            } else {
+                updateLoginStreakDisplay(currentStreak);
+            }
+        } else {
+            set(userRef, {
+                lastLogin: today,
+                loginStreak: 1
+            });
+            updateLoginStreakDisplay(1);
+        }
+    }).catch((error) => {
+        console.error("Error updating login streak:", error);
+    });
+}
+
+function updateLoginStreakDisplay(streak) {
+    const streakDisplay = document.getElementById('login-streak');
+    if (streakDisplay) {
+        streakDisplay.textContent = streak;
+    }
+}
+
+function initializeWelcomeMessage() {
     const welcomeMessage = document.getElementById('welcomeMessage');
     const currentHour = new Date().getHours();
     let greeting;
@@ -131,14 +177,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
         greeting = "Good evening";
     }
 
-    welcomeMessage.textContent = `${greeting}!`;
+    if (welcomeMessage) {
+        welcomeMessage.textContent = `${greeting}!`;
+    }
+}
 
-    // Water intake tracker
+function initializeWaterIntakeTracker() {
     let waterIntake = 0;
     const waterLevel = document.getElementById('waterLevel');
     const waterAmount = document.getElementById('waterAmount');
 
-    // Check if there's water intake data in localStorage
     if (localStorage.getItem('waterIntake')) {
         waterIntake = parseInt(localStorage.getItem('waterIntake'));
         console.log("Restored water intake from localStorage:", waterIntake);
@@ -147,18 +195,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     console.log("Initial water intake:", waterIntake);
 
-    // Add event listeners for each button
-    document.getElementById('hundred').addEventListener('click', () => addWater(100));
-    document.getElementById('twofifty').addEventListener('click', () => addWater(250));
-    document.getElementById('fivehundred').addEventListener('click', () => addWater(500));
-    document.getElementById('reset').addEventListener('click', resetWaterIntake); // Reset button listener
+    document.getElementById('hundred')?.addEventListener('click', () => addWater(100));
+    document.getElementById('twofifty')?.addEventListener('click', () => addWater(250));
+    document.getElementById('fivehundred')?.addEventListener('click', () => addWater(500));
+    document.getElementById('reset')?.addEventListener('click', resetWaterIntake);
 
     function addWater(amount) {
         console.log("addWater called with amount:", amount);
         waterIntake += amount;
         console.log("New water intake:", waterIntake);
 
-        // Store updated water intake in localStorage
         localStorage.setItem('waterIntake', waterIntake);
 
         updateWaterDisplay();
@@ -167,16 +213,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     function updateWaterDisplay() {
         console.log("updateWaterDisplay called");
-        const maxHeight = 300; // Height of the water container
-        const maxWater = 2000; // Set a max water intake (e.g., 2 liters)
+        const maxHeight = 300;
+        const maxWater = 2000;
         const height = Math.min((waterIntake / maxWater) * maxHeight, maxHeight);
 
         console.log("Calculated height:", height);
-        waterLevel.style.height = `${height}px`;
-        waterAmount.textContent = `${waterIntake} ml`;
-        console.log("Updated water amount text:", waterAmount.textContent);
+        if (waterLevel) {
+            waterLevel.style.height = `${height}px`;
+        }
+        if (waterAmount) {
+            waterAmount.textContent = `${waterIntake} ml`;
+        }
+        console.log("Updated water amount text:", waterAmount?.textContent);
 
-        // Add some fun messages based on water intake
         if (waterIntake >= 2000) {
             showNotification("Wow! You're a hydration superstar! 🌊");
         } else if (waterIntake >= 1500) {
@@ -190,15 +239,17 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     function resetWaterIntake() {
         console.log("resetWaterIntake called");
-        waterIntake = 0; // Reset the water intake to 0
-        localStorage.setItem('waterIntake', waterIntake); // Reset in localStorage
+        waterIntake = 0;
+        localStorage.setItem('waterIntake', waterIntake);
         updateWaterDisplay();
         showNotification("Water intake has been reset.");
     }
+}
 
-    function showNotification(message) {
-        console.log("showNotification called with message:", message);
-        const notificationContainer = document.getElementById('notification-container');
+function showNotification(message) {
+    console.log("showNotification called with message:", message);
+    const notificationContainer = document.getElementById('notification-container');
+    if (notificationContainer) {
         const notification = document.createElement('div');
         notification.className = 'notification';
         notification.textContent = message;
@@ -207,16 +258,21 @@ document.addEventListener('DOMContentLoaded', (event) => {
             notification.remove();
         }, 3000);
     }
+}
 
-    console.log("Script finished loading");
-});
-
-const cards = document.querySelectorAll('.stat-card');
-cards.forEach(card => {
-    card.addEventListener('click', () => {
-        card.querySelector('.card-inner').style.transform = 
-            card.querySelector('.card-inner').style.transform === 'rotateY(180deg)' 
-                ? 'rotateY(0deg)' 
-                : 'rotateY(180deg)';
+function initializeCardFlipListeners() {
+    const cards = document.querySelectorAll('.stat-card');
+    cards.forEach(card => {
+        card.addEventListener('click', () => {
+            const cardInner = card.querySelector('.card-inner');
+            if (cardInner) {
+                cardInner.style.transform = 
+                    cardInner.style.transform === 'rotateY(180deg)' 
+                        ? 'rotateY(0deg)' 
+                        : 'rotateY(180deg)';
+            }
+        });
     });
-});
+}
+
+console.log("Script finished loading");
