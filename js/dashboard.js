@@ -3,6 +3,7 @@ console.log("Script starting execution");
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getDatabase, ref, onValue, get, set, update } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 console.log("Imports completed");
 
@@ -21,6 +22,7 @@ console.log("Initializing Firebase");
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
+const firestore = getFirestore(app);
 
 console.log("Firebase initialized");
 
@@ -37,13 +39,14 @@ document.addEventListener('DOMContentLoaded', function() {
             fetchExerciseCounts(user.uid);
             initializeWaterIntakeTracker();
             initializeWelcomeMessage();
+            fetchUserFitnessLevel(user.uid);
         } else {
             console.log("No user is authenticated");
             window.location.href = 'home.html'; // Redirect to login page
         }
     });
 
-    initializeCardFlipListeners();
+    //initializeCardFlipListeners();
 });
 
 function fetchTotalCaloriesBurned(userId) {
@@ -279,8 +282,91 @@ function showNotification(message) {
     }
 }
 
+        /*function initializeCardFlipListeners() {
+            const cards = document.querySelectorAll('.stat-card');
+            cards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const cardInner = card.querySelector('.card-inner');
+                    if (cardInner) {
+                        cardInner.style.transform = 
+                            cardInner.style.transform === 'rotateY(180deg)' 
+                                ? 'rotateY(0deg)' 
+                                : 'rotateY(180deg)';
+                    }
+                });
+            });
+        }*/
+async function fetchUserFitnessLevel(userId) {
+    try {
+        // Fetch user's fitness level from Realtime Database
+        const userRef = ref(database, `users/${userId}`);
+        const snapshot = await get(userRef);
+        
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            const fitnessLevel = userData.fitnessLevel || 'Beginner';
+            
+            // Fetch exercises based on fitness level from Firestore
+            await fetchExercisesForFitnessLevel(fitnessLevel);
+        }
+    } catch (error) {
+        console.error('Error fetching user fitness level:', error);
+    }
+}
+
+async function fetchExercisesForFitnessLevel(fitnessLevel) {
+    try {
+        // Fetch exercises from Firestore for the specific fitness level
+        const exerciseDocRef = doc(firestore, 'exercises', fitnessLevel);
+        const exerciseDoc = await getDoc(exerciseDocRef);
+        
+        if (exerciseDoc.exists()) {
+            const exercisesData = exerciseDoc.data().exercises;
+            updateWorkoutCards(exercisesData);
+        } else {
+            console.error('No exercises found for fitness level:', fitnessLevel);
+        }
+    } catch (error) {
+        console.error('Error fetching exercises:', error);
+    }
+}
+
+function updateWorkoutCards(exercises) {
+    const workoutsContainer = document.querySelector('.workouts');
+    
+    // Clear existing workout cards
+    workoutsContainer.innerHTML = '';
+    
+    // Create new workout cards based on fetched exercises
+    exercises.forEach(exercise => {
+        const workoutCard = `
+            <div class="workout-card">
+                <div class="card-inner">
+                    <div class="card-front">
+                        <img src="${exercise.image}" alt="${exercise.name}">
+                        <h2 class="para">${exercise.name}</h2>
+                    </div>
+                    <div class="card-back">
+                        <h3>${exercise.name}</h3>
+                        <p>${exercise.description}</p>
+                        <p>Sets: ${exercise.sets}</p>
+                        <p>${exercise.reps ? `Reps: ${exercise.reps}` : `Duration: ${exercise.duration}`}</p>
+                        <p>Rest: ${exercise.rest}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        workoutsContainer.innerHTML += workoutCard;
+    });
+    
+    // Reinitialize card flip listeners
+    initializeCardFlipListeners();
+}
+
+// Keep your existing initializeCardFlipListeners function
 function initializeCardFlipListeners() {
-    const cards = document.querySelectorAll('.stat-card');
+    const cards = document.querySelectorAll('.workout-card');
     cards.forEach(card => {
         card.addEventListener('click', () => {
             const cardInner = card.querySelector('.card-inner');
