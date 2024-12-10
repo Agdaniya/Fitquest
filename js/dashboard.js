@@ -296,6 +296,18 @@ function showNotification(message) {
                 });
             });
         }*/
+            function updateFitnessLevelDisplay(fitnessLevel) {
+                const fitnessLevelDisplay = document.getElementById('fitness-level');
+                if (fitnessLevelDisplay) {
+                    fitnessLevelDisplay.textContent = fitnessLevel;
+                    
+                    // Remove previous fitness level classes
+                    fitnessLevelDisplay.classList.remove('beginner', 'intermediate', 'professional');
+                    
+                    // Add class based on fitness level
+                    fitnessLevelDisplay.classList.add(fitnessLevel.toLowerCase());
+                }
+            }
 async function fetchUserFitnessLevel(userId) {
     try {
         // Fetch user's fitness level from Realtime Database
