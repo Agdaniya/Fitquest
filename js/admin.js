@@ -49,7 +49,7 @@ document.getElementById('signup-form').addEventListener('submit', (e) => {
             alert("User created successfully! Please log in.");
             
             // Redirect to home.html (login page)
-            window.location.href = 'home.html';
+            window.location.href = 'userdetails.html';
         })
         .catch((error) => {
             const errorCode = error.code;
