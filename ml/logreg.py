@@ -35,9 +35,9 @@ y_pred = model.predict(X_test)
 # Evaluate the model
 print("Accuracy: ", accuracy_score(y_test, y_pred))
 
-# Save the model if needed for later use
-joblib.dump(model, 'fitness_level_model.pkl')
-
+# Save models in a specific directory
+joblib.dump(model, 'ml/models/fitness_level_model.pkl')
+joblib.dump(scaler, 'ml/models/scaler.pkl')
 
 from sklearn.metrics import confusion_matrix, classification_report
 
@@ -50,3 +50,7 @@ print(cm)
 cr = classification_report(y_test, y_pred)
 print("Classification Report:")
 print(cr)
+import os
+
+# Ensure the directory exists
+os.makedirs('ml/models', exist_ok=True)

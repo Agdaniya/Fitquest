@@ -20,61 +20,103 @@ const database = getDatabase(app);
 
 // Function to calculate BMI
 function calculateBMI(weight, height) {
-    // Convert height to meters
     const heightInMeters = height / 100;
-    
-    // Calculate BMI
-    const bmi = weight / (heightInMeters * heightInMeters);
-    
-    // Round to two decimal places
-    return Math.round(bmi * 100) / 100;
+    return Math.round((weight / (heightInMeters * heightInMeters)) * 100) / 100;
 }
 
-// Form submission handler
-document.getElementById('user-details-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    // Get current user
-    const user = auth.currentUser;
-    if (!user) {
-        alert('Please log in first');
-        window.location.href = 'home.html';
-        return;
-    }
+// Wait for the DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', () => {
+    const userDetailsForm = document.getElementById('user-details-form');
+    const skipBtn = document.getElementById('skip-btn');
 
-    // Collect form data
-    const age = document.getElementById('age').value;
-    const gender = document.getElementById('gender').value;
-    const height = parseFloat(document.getElementById('height').value);
-    const weight = parseFloat(document.getElementById('weight').value);
-    const activityLevel = document.getElementById('activity-level').value;
+    // Form submission handler
+    userDetailsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Get current user
+        const user = auth.currentUser;
+        if (!user) {
+            alert('Please log in first');
+            window.location.href = '../home.html';
+            return;
+        }
 
-    // Calculate BMI
-    const bmi = calculateBMI(weight, height);
+        // Collect form data
+        const age = document.getElementById('age').value;
+        const gender = document.getElementById('gender').value;
+        const height = parseFloat(document.getElementById('height').value);
+        const weight = parseFloat(document.getElementById('weight').value);
+        const activityLevel = document.getElementById('activity-level').value;
 
-    // Prepare user details for database
-    const userDetails = {
-        age: age,
-        gender: gender,
-        height: height,
-        weight: weight,
-        bmi: bmi,
-        activityLevel: activityLevel
-    };
+        // Validate inputs
+        if (!age || !gender || !height || !weight || !activityLevel) {
+            alert("Please fill in all fields.");
+            return;
+        }
 
-    // Update user details in database
-    update(ref(database, 'users/' + user.uid), userDetails)
-        .then(() => {
-            // Redirect to home.html after successful save
-            window.location.href = 'home.html';
-        })
-        .catch((error) => {
-            console.error('Error saving details:', error);
-            alert('Failed to save details. Please try again.');
-        });
-});
+        if (isNaN(height) || isNaN(weight)) {
+            alert("Please enter valid numbers for height and weight.");
+            return;
+        }
 
-// Skip button handler
-document.getElementById('skip-btn').addEventListener('click', () => {
-    window.location.href = 'home.html';
+        // Calculate BMI
+        const bmi = calculateBMI(weight, height);
+
+        // Prepare user details for database and prediction
+        const userDetails = {
+            age: age,
+            gender: gender,
+            height: height,
+            weight: weight,
+            bmi: bmi,
+            activityLevel: activityLevel
+        };
+
+        try {
+            // Log the user details before sending
+            console.log('User Details:', JSON.stringify(userDetails));
+
+            // Call the backend to predict fitness level
+            const response = await fetch('http://localhost:5000/predict-fitness-level', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    age: userDetails.age,
+                    height: userDetails.height,
+                    weight: userDetails.weight,
+                    activityLevel: userDetails.activityLevel,
+                    gender: userDetails.gender
+                })
+            });
+
+            // Check if the response is successful
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to predict fitness level');
+            }
+
+            const data = await response.json();
+            const fitnessLevel = data.fitness_level;
+
+            // Add fitness level to user details
+            userDetails.fitnessLevel = fitnessLevel;
+
+            // Update user details in the database
+            await update(ref(database, 'users/' + user.uid), userDetails);
+
+            // Redirect to home page
+            window.location.href = '../home.html';
+
+        } catch (error) {
+            console.error('Error predicting fitness level:', error);
+            alert(`Failed to predict fitness level: ${error.message}`);
+        }
+    });
+
+    // Skip button handler
+    skipBtn.addEventListener('click', () => {
+        window.location.href = '../home.html';
+    });
 });

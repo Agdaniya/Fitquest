@@ -8,22 +8,9 @@ import joblib
 import numpy as np
 from flask import request
 from sklearn.preprocessing import StandardScaler
-import os
 
-# Get the absolute path to the directory containing the script
-base_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Construct absolute paths to model files
-model_path = os.path.join(base_dir, '..', 'ml', 'models', 'fitness_level_model.pkl')
-scaler_path = os.path.join(base_dir, '..', 'ml', 'models', 'scaler.pkl')
-
-# Load models using absolute paths
-model = joblib.load(model_path)
-scaler = joblib.load(scaler_path)
-
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True, methods=['GET', 'POST', 'OPTIONS'])
-
+app = Flask(__name__, static_folder='.', static_url_path='')
+CORS(app, resources={r"/*": {"origins": "http://localhost:8000"}})
 
 
 jumping_jack_count = 0
@@ -213,7 +200,21 @@ if __name__ == '__main__':
     print("Starting Flask app...")
     app.run(debug=True, port=5000)
 
+import os
 
+# Get the absolute path to the directory containing the script
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Construct absolute paths to model files
+model_path = os.path.join(base_dir, '..', 'ml', 'models', 'fitness_level_model.pkl')
+scaler_path = os.path.join(base_dir, '..', 'ml', 'models', 'scaler.pkl')
+
+# Load models using absolute paths
+model = joblib.load(model_path)
+scaler = joblib.load(scaler_path)
+
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/predict-fitness-level', methods=['POST'])
 def predict_fitness_level():
