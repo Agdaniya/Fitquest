@@ -18,6 +18,18 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
 
+// Function to calculate BMI
+function calculateBMI(weight, height) {
+    // Convert height to meters
+    const heightInMeters = height / 100;
+    
+    // Calculate BMI
+    const bmi = weight / (heightInMeters * heightInMeters);
+    
+    // Round to two decimal places
+    return Math.round(bmi * 100) / 100;
+}
+
 // Form submission handler
 document.getElementById('user-details-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -31,12 +43,23 @@ document.getElementById('user-details-form').addEventListener('submit', (e) => {
     }
 
     // Collect form data
+    const age = document.getElementById('age').value;
+    const gender = document.getElementById('gender').value;
+    const height = parseFloat(document.getElementById('height').value);
+    const weight = parseFloat(document.getElementById('weight').value);
+    const activityLevel = document.getElementById('activity-level').value;
+
+    // Calculate BMI
+    const bmi = calculateBMI(weight, height);
+
+    // Prepare user details for database
     const userDetails = {
-        age: document.getElementById('age').value,
-        gender: document.getElementById('gender').value,
-        height: document.getElementById('height').value,
-        weight: document.getElementById('weight').value,
-        activityLevel: document.getElementById('activity-level').value
+        age: age,
+        gender: gender,
+        height: height,
+        weight: weight,
+        bmi: bmi,
+        activityLevel: activityLevel
     };
 
     // Update user details in database
