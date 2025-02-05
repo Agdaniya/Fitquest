@@ -151,12 +151,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateTotalCount(exerciseType, newCount) {
-        if (!currentUser || (exerciseType === 'jumping-jacks' && !isJJTracking) || (exerciseType === 'arm-raises' && !isARTracking) || (exerciseType === 'arm-circle' && !isACTracking)) {
+        if (!currentUser || (exerciseType === 'jumping-jacks' && !isJJTracking) || 
+            (exerciseType === 'arm-raises' && !isARTracking) || 
+            (exerciseType === 'arm-circle' && !isACTracking)) {
             console.log(`No user logged in or not tracking ${exerciseType}, skipping count update`);
             return;
         }
-
-        let difference, totalCount;
+    
+        // Ensure newCount is a valid number
+        newCount = Number(newCount);
+        if (isNaN(newCount)) {
+            console.error(`Invalid count received for ${exerciseType}`);
+            return;
+        }
+    
+        let difference = 0;
         if (exerciseType === 'jumping-jacks') {
             difference = newCount - jjPreviousCount;
             if (difference > 0) {
@@ -164,33 +173,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateDisplays('jumping-jacks', jjTotalCount);
                 console.log(`Total jumping jacks count updated: ${jjTotalCount}`);
                 updateFirebaseCount('jumping-jacks', jjTotalCount);
+                updateFirebaseCalories('jumping-jacks', difference);
             }
             jjPreviousCount = newCount;
-        } else if (exerciseType === 'arm-raises'){
+        } else if (exerciseType === 'arm-raises') {
             difference = newCount - arPreviousCount;
             if (difference > 0) {
                 arTotalCount += difference;
                 updateDisplays('arm-raises', arTotalCount);
                 console.log(`Total arm raises count updated: ${arTotalCount}`);
                 updateFirebaseCount('arm-raises', arTotalCount);
+                updateFirebaseCalories('arm-raises', difference);
             }
             arPreviousCount = newCount;
-        }else{
+        } else if (exerciseType === 'arm-circle') {
             difference = newCount - aCPreviousCount;
             if (difference > 0) {
                 aCTotalCount += difference;
                 updateDisplays('arm-circle', aCTotalCount);
                 console.log(`Total arm circle count updated: ${aCTotalCount}`);
                 updateFirebaseCount('arm-circle', aCTotalCount);
+                updateFirebaseCalories('arm-circle', difference);
             }
             aCPreviousCount = newCount;
-        }
-        if (difference > 0) {
-            totalCount += difference;
-            updateDisplays(totalCount);
-            console.log(`Total count updated: ${totalCount}`);
-            updateFirebaseCount('jumping-jacks', totalCount);
-            updateFirebaseCalories('jumping-jacks', totalCount);
         }
     }
 

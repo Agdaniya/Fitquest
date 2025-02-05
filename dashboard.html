@@ -6,6 +6,7 @@
     <title>FitQuest Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/dashboard.css">
+    <link rel="stylesheet" href="./css/caltracker.css">
 </head>
 <body>
     <div id="notification-container"></div>
@@ -29,6 +30,10 @@
     <div class="main" role="main">
         <div class="section dashboard-header">
             <h1 id="welcomeMessage"></h1>
+            <button id="cameraButton" class="camera-btn">
+                <span class="camera-icon">📸</span>
+                Track your calorie intake
+            </button>
             <p>Track your progress and stay on top of your fitness goals.</p>
         </div>
 
@@ -39,6 +44,10 @@
             </div>
             <div class="stat-card">
                 <h3>Calories Burned</h3>
+                <p><span id="calories-burned">0</span> kcal</p>
+            </div>
+            <div class="stat-card">
+                <h3>Calories Intake</h3>
                 <p><span id="calories-burned">0</span> kcal</p>
             </div>
             <div class="stat-card">
@@ -72,9 +81,27 @@
         </section>
     </div>
 </div>
-
+<div id="imageModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <div class="camera-options">
+            <input type="file" id="imageUpload" accept="image/*" capture="environment">
+            <video id="videoElement" autoplay playsinline style="display: none;"></video>
+            <canvas id="canvas" style="display: none;"></canvas>
+            <div class="preview-container">
+                <img id="imagePreview" alt="Preview" style="display: none;">
+            </div>
+        </div>
+        <div class="button-container">
+            <button id="captureBtn" class="action-btn">Capture</button>
+            <button id="analyzeBtn" class="action-btn" style="display: none;">Analyze Calories</button>
+        </div>
+        <div id="results" class="results"></div>
+    </div>
+</div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script  type="module" src="./js/dashboard.js"></script>
+    <script  type="module" src="./js/caltracker.js"></script>
 </body>
 </html>
