@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('workoutContent').innerHTML = '<p>Error loading workout. Please try again.</p>';
         }
     } else {
-        document.getElementById('workoutContent').innerHTML = '<p>No workout selected. Please choose a goal.</p>';
+        document.getElementById('workoutContent').innerHTML = '<p></p>';
         localStorage.removeItem('todaysGoal'); // Clear goal if no workout
         console.log('No workout found, goal cleared');
     }

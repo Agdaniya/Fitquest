@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            const GEMINI_API_KEY = 'AIzaSyDf0a0WiGs9dTS9SkKjxEoNu2VGXRHmXBw'; // Replace with your actual API key
+            const GEMINI_API_KEY = 'AIzaSyCrS2PcAvphF2aV9RFTBWvBcqAjiCmLWqg'; // Replace with your actual API key
             const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
                 headers: {

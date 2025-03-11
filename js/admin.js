@@ -13,7 +13,7 @@ const firebaseConfig = {
     measurementId: "G-6W3V2DH02K"
 };
 
-// Initialize Firebase
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
@@ -32,14 +32,13 @@ document.getElementById('signup-form').addEventListener('submit', (e) => {
 
     createUserWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
-            // Signed up 
+            
             const user = userCredential.user;
 
-             // Store the name in localStorage
             localStorage.setItem('username', name);
 
             
-            // Add user data to realtime database
+            
             set(ref(database, 'users/' + user.uid), {
                 email: email,
                 name: name,
@@ -48,7 +47,7 @@ document.getElementById('signup-form').addEventListener('submit', (e) => {
 
             alert("User created successfully! Please log in.");
             
-            // Redirect to home.html (login page)
+            
             window.location.href = 'userdetails.html';
         })
         .catch((error) => {

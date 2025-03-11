@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
-model_path = os.path.join(base_dir, '..', 'ml', 'models', 'fitness_level_model.pkl')
+model_path = os.path.join(base_dir, '..', 'ml', 'models', 'best_fitness_model.pkl')
 scaler_path = os.path.join(base_dir, '..', 'ml', 'models', 'scaler.pkl')
 
 model = joblib.load(model_path)

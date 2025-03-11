@@ -296,18 +296,7 @@ function showNotification(message) {
                 });
             });
         }*/
-            function updateFitnessLevelDisplay(fitnessLevel) {
-                const fitnessLevelDisplay = document.getElementById('fitness-level');
-                if (fitnessLevelDisplay) {
-                    fitnessLevelDisplay.textContent = fitnessLevel;
-                    
-                    // Remove previous fitness level classes
-                    fitnessLevelDisplay.classList.remove('beginner', 'intermediate', 'professional');
-                    
-                    // Add class based on fitness level
-                    fitnessLevelDisplay.classList.add(fitnessLevel.toLowerCase());
-                }
-            }
+            
 async function fetchUserFitnessLevel(userId) {
     try {
         // Fetch user's fitness level from Realtime Database
@@ -317,7 +306,7 @@ async function fetchUserFitnessLevel(userId) {
         if (snapshot.exists()) {
             const userData = snapshot.val();
             const fitnessLevel = userData.fitnessLevel || 'Beginner';
-            
+            updateFitnessLevelDisplay(fitnessLevel);
             // Fetch exercises based on fitness level from Firestore
             await fetchExercisesForFitnessLevel(fitnessLevel);
         }
@@ -325,7 +314,18 @@ async function fetchUserFitnessLevel(userId) {
         console.error('Error fetching user fitness level:', error);
     }
 }
-
+function updateFitnessLevelDisplay(fitnessLevel) {
+    const fitnessLevelDisplay = document.getElementById('fitness-level');
+    if (fitnessLevelDisplay) {
+        fitnessLevelDisplay.textContent = fitnessLevel;
+        
+        // Remove previous fitness level classes
+        fitnessLevelDisplay.classList.remove('beginner', 'intermediate', 'professional');
+        
+        // Add class based on fitness level
+        fitnessLevelDisplay.classList.add(fitnessLevel.toLowerCase());
+    }
+}
 async function fetchExercisesForFitnessLevel(fitnessLevel) {
     try {
         // Fetch exercises from Firestore for the specific fitness level
