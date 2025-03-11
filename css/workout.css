@@ -152,7 +152,18 @@ body {
     font-size: 14px;
     color: var(--text-color);
 }
-
+#start-plan{
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #0077be;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    display: block;  /* Ensures it takes the full width of its container */
+    text-align: left; /* Aligns text to the left inside the button */
+    margin-left: 0; 
+}
 
 .goal-button button {
     padding: 10px 20px;
