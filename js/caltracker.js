@@ -9,10 +9,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const analyzeBtn = document.getElementById('analyzeBtn');
     const imageUpload = document.getElementById('imageUpload');
     const results = document.getElementById('results');
-    const caloriesIntakeDisplay = document.querySelector('#calories-burned');
+    const caloriesIntakeDisplay = document.querySelector('#calories-intake');
 
     let stream = null;
     let optionsMenu = null;
+    let totalDailyCalorieIntake = 0
+
+     // Load saved calorie intake from localStorage if available
+     if (localStorage.getItem('totalCalorieIntake')) {
+        totalDailyCalorieIntake = parseInt(localStorage.getItem('totalCalorieIntake'));
+        updateCalorieIntakeDisplay();
+    }
 
     function createOptionsMenu() {
         const menu = document.createElement('div');
@@ -119,6 +126,62 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Function to update the calorie intake display
+    function updateCalorieIntakeDisplay() {
+        if (caloriesIntakeDisplay) {
+            caloriesIntakeDisplay.textContent = totalDailyCalorieIntake;
+        } else {
+            console.error("Calories intake display element not found");
+        }
+        
+        // Save to localStorage for persistence
+        localStorage.setItem('totalCalorieIntake', totalDailyCalorieIntake);
+    }
+
+     // Function to add calories to the daily total
+     function addCaloriesToDaily(calories) {
+        totalDailyCalorieIntake += calories;
+        updateCalorieIntakeDisplay();
+        
+        // Show notification
+        showNotification(`Added ${calories} calories to your daily intake!`);
+        
+        // Create a food entry in the history if needed
+        addFoodEntryToHistory(calories);
+    }
+
+     // Function to add a food entry to history
+     function addFoodEntryToHistory(calories) {
+        const historyContainer = document.getElementById('food-history');
+        if (historyContainer) {
+            const entryTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const entry = document.createElement('div');
+            entry.className = 'food-entry';
+            entry.innerHTML = `
+                <span class="entry-time">${entryTime}</span>
+                <span class="entry-calories">${calories} calories</span>
+            `;
+            historyContainer.prepend(entry);
+        }
+    }
+    
+    // Function to show notification
+    function showNotification(message) {
+        const notificationContainer = document.getElementById('notification-container');
+        if (notificationContainer) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            notificationContainer.appendChild(notification);
+            setTimeout(() => {
+                notification.classList.add('fade-out');
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
+            }, 2500);
+        }
+    }
+
     // Image analysis with Gemini API
     analyzeBtn.addEventListener('click', async () => {
         try {
@@ -168,9 +231,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const analysisText = data.candidates[0].content.parts[0].text;
             
-            // Extract total calories
-            const calorieMatches = analysisText.match(/(?:total calories:?\s*(\d+))|(?:(\d+)\s*calories?\s*total)/i);
-            const totalCalories = calorieMatches ? parseInt(calorieMatches[1] || calorieMatches[2]) : 0;
+            // Extract total calories - specifically looking for "Total estimated calories" format
+const calorieMatches = analysisText.match(/total\s+estimated\s+calories:?\s*(\d+)/i);
+
+// Add logging to help diagnose issues
+console.log("Analysis text:", analysisText);
+console.log("Calorie matches:", calorieMatches);
+
+let totalCalories = 0;
+if (calorieMatches && calorieMatches[1]) {
+    totalCalories = parseInt(calorieMatches[1]);
+    console.log("Extracted calories:", totalCalories);
+} else {
+    // Fallback: look for the last occurrence of a number followed by "calories"
+    const allCalorieMatches = [...analysisText.matchAll(/(\d+)\s*calories/gi)];
+    if (allCalorieMatches.length > 0) {
+        // Get the last match, which is likely the total
+        const lastMatch = allCalorieMatches[allCalorieMatches.length - 1];
+        totalCalories = parseInt(lastMatch[1]);
+        console.log("Fallback calories extraction (last match):", totalCalories);
+    } else {
+        console.warn("Could not extract calorie information from API response");
+    }
+}
 
             results.innerHTML = `
                 <div class="analysis-results">
@@ -179,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${analysisText.replace(/\n/g, '<br>')}
                     </div>
                     <div class="action-buttons">
-                        <button class="action-btn" onclick="document.querySelector('#calories-burned').textContent = ${totalCalories}">
+                        <button class="action-btn" id="addCaloriesBtn">
                             Add ${totalCalories} calories to Daily Intake
                         </button>
                         <button class="action-btn" onclick="document.querySelector('.close-btn').click()">
@@ -188,6 +271,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             `;
+            
+            // Add event listener to the "Add calories" button
+            document.getElementById('addCaloriesBtn').addEventListener('click', () => {
+                addCaloriesToDaily(totalCalories);
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    resetPreview();
+                }, 1000);
+            });
         } catch (error) {
             console.error('Error analyzing image:', error);
             results.innerHTML = `
@@ -198,6 +290,29 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
     });
+
+    // Reset calorie intake for a new day
+    function resetDailyCalories() {
+        // Check if we need to reset based on last saved date
+        const today = new Date().toDateString();
+        const lastDate = localStorage.getItem('lastCalorieIntakeDate');
+        
+        if (lastDate !== today) {
+            totalDailyCalorieIntake = 0;
+            localStorage.setItem('totalCalorieIntake', 0);
+            localStorage.setItem('lastCalorieIntakeDate', today);
+            updateCalorieIntakeDisplay();
+            
+            // Clear food history if it exists
+            const historyContainer = document.getElementById('food-history');
+            if (historyContainer) {
+                historyContainer.innerHTML = '';
+            }
+        }
+    }
+    
+    // Check if we need to reset the daily calories on load
+    resetDailyCalories();
 
     // Cleanup and reset functions
     document.addEventListener('click', (e) => {

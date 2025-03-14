@@ -37,6 +37,12 @@
             <p>Track your progress and stay on top of your fitness goals.</p>
         </div>
 
+        <div class="section motivational-quote">
+            <h3>💪 Today's Motivation</h3>
+            <p id="quote">Loading...</p>
+        <br>
+        </div>
+
         <div class="section stats">
             <div class="stat-card">
                 <h3>Todays's Goal</h3>
@@ -48,7 +54,7 @@
             </div>
             <div class="stat-card">
                 <h3>Calories Intake</h3>
-                <p><span id="calories-burned">0</span> kcal</p>
+                <p><span id="calories-intake">0</span> kcal</p>
             </div>
             <div class="stat-card">
                 <h3>Login Streak</h3>
@@ -103,5 +109,95 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script  type="module" src="./js/dashboard.js"></script>
     <script  type="module" src="./js/caltracker.js"></script>
+    <script>
+    // Function to fetch a motivational quote from the Gemini API
+async function fetchQuote() {
+    const apiKey = "AIzaSyCe7pef0H9teC2vbpxMxsz4Qhhr8eZpr6c";  // 🔹 Replace with your actual Gemini API key
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`;
+    
+    // Add a timestamp to make each request unique
+    const timestamp = new Date().getTime();
+    
+    const requestBody = {
+        contents: [{ 
+            parts: [{ 
+                text: `Generate a fresh, unique motivational quote for fitness and workouts. Make it short, powerful and different from previous quotes. Random seed: ${timestamp}` 
+            }] 
+        }]
+    };
+    
+    try {
+        document.getElementById("quote").innerText = "Fetching a new quote...";
+        
+        // Make the request to the Gemini API with cache busting
+        const response = await fetch(`${url}?nocache=${timestamp}`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache"
+            },
+            body: JSON.stringify(requestBody)
+        });
+        
+        // Parse the response JSON
+        const data = await response.json();
+        
+        // Extract the quote and clean it up
+        let quote = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        quote = quote.replace(/Random seed: \d+/g, "").trim();
+        
+        // If quote is empty, generate a default one
+        if (!quote) {
+            throw new Error("Empty quote received");
+        }
+        
+        // Display the quote on the page
+        document.getElementById("quote").innerText = quote;
+        
+    } catch (error) {
+        console.error("Error fetching quote:", error);
+        // Updated fallback quotes
+        const fallbackQuotes = [
+            "The pain you feel today will be the strength you feel tomorrow.",
+            "Your only limit is the one you set yourself.",
+            "Don't wish for it, work for it.",
+            "Strive for progress, not perfection.",
+            "The harder you work for something, the greater you'll feel when you achieve it.",
+            "Fitness is not about being better than someone else, it's about being better than you used to be.",
+            "The only bad workout is the one that didn't happen.",
+            "Your body can stand almost anything. It's your mind that you have to convince.",
+            "Fall in love with taking care of your body.",
+            "Strength does not come from the body. It comes from the will.",
+            "The difference between the impossible and the possible lies in determination.",
+            "Success starts with self-discipline.",
+            "The only way to define your limits is by going beyond them.",
+            "Train like a beast, look like a beauty.",
+            "Sore today, strong tomorrow.",
+            "Make yourself proud.",
+            "What seems impossible today will one day become your warm-up.",
+            "Sweat is just fat crying.",
+            "The hardest lift of all is lifting your butt off the couch.",
+            "Be stronger than your excuses."
+        ];
+        
+        // Select a random quote
+        const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+        document.getElementById("quote").innerText = randomQuote;
+    }
+}
+
+// Load a new quote when the page loads
+document.addEventListener('DOMContentLoaded', fetchQuote);
+
+// Make sure we're not using any cached version
+window.addEventListener('pageshow', function(event) {
+    // If the page is loaded from cache (browser back/forward button)
+    if (event.persisted) {
+        fetchQuote();
+    }
+});
+    </script>
+    
 </body>
 </html>

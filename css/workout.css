@@ -193,7 +193,50 @@ body {
     transform: translateY(-20px);
     animation: slideIn 0.3s forwards;
 }
-
+.progress-container {
+    width: 100%;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    margin: 20px 0;
+    position: relative;
+    height: 30px;
+}
+.progress-bar {
+    height: 100%;
+    background-color: #4CAF50;
+    border-radius: 5px;
+    width: 0%;
+    transition: width 0.3s;
+}
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #000;
+}
+button {
+    padding: 10px 20px;
+    margin: 10px 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+#start-plan {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+}
+#stop-plan {
+    background-color: #f44336;
+    color: white;
+    border: none;
+}
+.exercise-info {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 20px;
+}
 @keyframes slideIn {
     to {
         opacity: 1;

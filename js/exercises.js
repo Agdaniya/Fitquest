@@ -3,7 +3,6 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-// 🔥 Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyAOgdbddMw93MExNBz3tceZ8_NrNAl5q40",
     authDomain: "fitquest-9b891.firebaseapp.com",
@@ -13,119 +12,160 @@ const firebaseConfig = {
     messagingSenderId: "275044631678",
     appId: "1:275044631678:web:7fa9586ba031270baa042f",
     measurementId: "G-6W3V2DH02K"
-};
+ };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const dbRealtime = getDatabase(app);
 const dbFirestore = getFirestore(app);
 
-// ✅ Wait for DOM to load
+// Track progress data
+let totalExercises = 0;
+let completedExercises = 0;
+
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("DOM fully loaded and ready for exercises.js");
-    
-    // Give a small delay to ensure other scripts have run
-    setTimeout(() => {
-        console.log("Checking for exercise-container:", document.getElementById("exercise-container"));
-        
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                console.log("Logged-in user:", user.uid);
-                displayExercises(user.uid);
-            } else {
-                console.log("No user is logged in.");
-            }
-        });
-    }, 200); // Small delay to ensure DOM is fully processed
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            displayExercises(user.uid);
+        }
+    });
 });
 
-// 🔥 Function to Fetch Fitness Level from Realtime Database
 const getFitnessLevel = async (userId) => {
-    if (!userId) {
-        console.error("No authenticated user found.");
-        return "beginner"; // Default if no user
-    }
-
     const userRef = ref(dbRealtime, `users/${userId}/fitnessLevel`);
     try {
         const snapshot = await get(userRef);
-        if (snapshot.exists()) {
-            return snapshot.val().toLowerCase(); // Ensure lowercase match
-        } else {
-            console.log("No fitness level found, defaulting to beginner.");
-            return "beginner";
-        }
+        return snapshot.exists() ? snapshot.val().toLowerCase() : "beginner";
     } catch (error) {
         console.error("Error fetching fitness level:", error);
         return "beginner";
     }
 };
 
-// 🔥 Function to Fetch and Display Exercises
 const displayExercises = async (userId) => {
-    console.log("displayExercises called for user:", userId);
     const container = document.getElementById("exercise-container");
-
-    if (!container) {
-        console.error("Error: #exercise-container not found in the DOM.");
-        console.log("Available IDs:", Array.from(document.querySelectorAll('[id]')).map(el => el.id));
-        return;
-    }
-
     const fitnessLevel = await getFitnessLevel(userId);
-    console.log("User fitness level:", fitnessLevel);
-    console.log("Fetching document from path:", `exercises/${fitnessLevel}`);
-
     const exercisesRef = doc(dbFirestore, "exercises", fitnessLevel);
 
     try {
         const docSnap = await getDoc(exercisesRef);
         if (docSnap.exists()) {
-            const exercises = docSnap.data();
-            console.log("Fetched Firestore Data:", exercises);
-
-            renderExercises(exercises);
+            renderExercises(docSnap.data());
         } else {
-            console.log("No exercises found for this fitness level:", fitnessLevel);
-            container.innerHTML = `<p>No exercises available for fitness level: ${fitnessLevel}</p>`;
+            container.innerHTML = `<p>No exercises available.</p>`;
         }
     } catch (error) {
         console.error("Error fetching exercises:", error);
-        container.innerHTML = `<p>Error loading exercises: ${error.message}</p>`;
     }
 };
 
-// 🔥 Function to Render Exercises in HTML
 const renderExercises = (exercises) => {
-    console.log("Rendering exercises:", exercises);
     const container = document.getElementById("exercise-container");
     container.innerHTML = "";
-
-    // Add title
-    const title = document.createElement("h2");
-    title.textContent = "Recommended Exercises";
-    title.classList.add("section-title");
-    container.appendChild(title);
-
+    
+    // Reset exercise counters
+    totalExercises = 0;
+    completedExercises = 0;
+    
     Object.keys(exercises).forEach(type => {
         const section = document.createElement("div");
         section.classList.add("exercise-section");
         section.innerHTML = `<h3>${type.toUpperCase()}</h3>`;
 
         exercises[type].forEach(exercise => {
-            console.log("Rendering exercise:", exercise);
-
+            // Increment total exercises counter
+            totalExercises++;
+            
             const card = document.createElement("div");
             card.classList.add("exercise-card");
-            card.innerHTML = `
-                <h4>${exercise.exercise}</h4>
-                <p><strong>Category:</strong> ${exercise.type}</p>
-                <p><strong>Reps:</strong> ${exercise.count}</p>
-                <p><strong>Rest Time:</strong> ${exercise.rest}</p>
-            `;
+
+            let details = `<h4>${exercise.exercise}</h4>
+                <p><strong>Category:</strong> ${exercise.type}</p>`;
+
+            if (exercise.type === "reps") {
+                details += `<p><strong>Reps:</strong> ${exercise.reps}</p>`;
+            } else if (exercise.type === "hold") {
+                details += `<p><strong>Hold Time:</strong> ${exercise.hold} seconds</p>`;
+            } else if (exercise.type === "time") {
+                details += `<p><strong>Duration:</strong> ${exercise.time} seconds</p>`;
+            }
+            details += `<p><strong>Rest Time:</strong> ${exercise.rest} seconds</p>`;
+            
+            const startButton = document.createElement("button");
+            startButton.textContent = "Start";
+            startButton.classList.add("start-btn");
+            startButton.addEventListener("click", () => startExercise(exercise, card));
+            
+            card.innerHTML = details;
+            card.appendChild(startButton);
             section.appendChild(card);
         });
-
         container.appendChild(section);
     });
+    
+    // Initialize progress bar at 0%
+    updateProgressBar();
+};
+
+const updateProgressBar = () => {
+    const progressBar = document.getElementById("progress-bar");
+    const progressText = document.getElementById("progress-text");
+    
+    if (!progressBar || !progressText) return;
+    
+    const progressPercentage = totalExercises > 0 ? Math.round((completedExercises / totalExercises) * 100) : 0;
+    
+    progressBar.style.width = `${progressPercentage}%`;
+    progressText.textContent = `Progress: ${progressPercentage}%`;
+};
+
+const markExerciseCompleted = () => {
+    completedExercises++;
+    updateProgressBar();
+};
+
+const startExercise = (exercise, card) => {
+    card.querySelector("button").disabled = true;
+    if (exercise.type === "reps") {
+        fetch(`http://localhost:5000/track/start-${exercise.exercise.toLowerCase()}`, { method: "POST" })
+            .then(() => checkCompletion(exercise, card));
+    } else {
+        let duration = exercise.type === "hold" ? exercise.hold : exercise.time;
+        let countdown = duration;
+        const interval = setInterval(() => {
+            card.querySelector("button").textContent = `Time left: ${countdown}s`;
+            if (--countdown < 0) {
+                clearInterval(interval);
+                showRestPeriod(exercise, card);
+            }
+        }, 1000);
+    }
+};
+
+const showRestPeriod = (exercise, card) => {
+    let countdown = exercise.rest;
+    const interval = setInterval(() => {
+        card.querySelector("button").textContent = `Rest: ${countdown}s`;
+        if (--countdown < 0) {
+            clearInterval(interval);
+            card.querySelector("button").textContent = "Completed";
+            card.querySelector("button").disabled = true;
+            markExerciseCompleted(); 
+        }
+    }, 1000);
+};
+
+const checkCompletion = (exercise, card) => {
+    const checkInterval = setInterval(() => {
+        fetch(`http://localhost:5000/track/get-${exercise.exercise.toLowerCase()}-count`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.count >= exercise.reps) {
+                    card.querySelector("button").textContent = "Completed";
+                    card.querySelector("button").disabled = true;
+                    markExerciseCompleted(); 
+                    clearInterval(checkInterval); 
+                }
+            });
+    }, 3000);
 };

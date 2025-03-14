@@ -31,7 +31,18 @@
         
         <div class="section workout-plan">
             <h2>Today's Workout Plan</h2> 
-            <button id="start-plan">Start Plan</button>
+            <div class="progress-container">
+                <div id="progress-bar" class="progress-bar"></div>
+                <p id="progress-text" class="progress-text">Progress: 0%</p>
+            </div>
+            <div id="exercise-display"></div>
+    
+            
+            <!--<div class="controls">
+                <button id="start-plan">Start Plan</button>
+                <button id="stop-plan">Stop</button>
+            </div>      
+        -->  
             <div id="exercise-container"></div>
             <div id="workoutContent"></div>
             <div class="goal-button">
@@ -39,6 +50,7 @@
             <a href="goals.html"><button id="select-goal">Add another Goal</button></a>
             </div>
           </div>
+
           
     </div>
 </div>
