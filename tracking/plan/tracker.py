@@ -1,107 +1,247 @@
 import sys
 import json
-import time
 import cv2
 import mediapipe as mp
-import numpy as np
+import time
+from datetime import datetime
 
-# Initialize MediaPipe Pose Detection
+# Initialize MediaPipe Pose
 mp_pose = mp.solutions.pose
-pose = mp_pose.Pose()
+mp_drawing = mp.solutions.drawing_utils
+pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
-# Function to track reps using pose estimation
-def track_reps(exercise_name, details):
-    reps = details.get("reps", 10)
-    rest_time = details.get("rest", 30)
-    sets = details.get("sets", 3)
-
+def open_camera():
+    """Opens the camera for testing with pose detection."""
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
-        print("Error: Could not open camera")
+        print("Error: Camera could not be opened.")
         return
-
-    rep_count = 0
-    set_count = 0
-    position = None
-
-    while set_count < sets:
-        success, frame = cap.read()
-        if not success:
-            continue
-
-        # Convert to RGB
-        image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = pose.process(image_rgb)
-
+    
+    print("Camera opened. Press 'q' to exit camera test mode.")
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Error: Failed to capture frame.")
+            break
+        
+        # Convert to RGB for MediaPipe
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = pose.process(rgb_frame)
+        
+        # Draw pose landmarks
         if results.pose_landmarks:
-            landmarks = results.pose_landmarks.landmark
-            left_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
-            left_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP]
-            left_knee = landmarks[mp_pose.PoseLandmark.LEFT_KNEE]
-
-            # Calculate angle for squats, push-ups, etc.
-            angle = calculate_angle(left_shoulder, left_hip, left_knee)
-
-            # Basic logic for detecting rep movements (adjust as needed)
-            if angle > 160:  
-                position = "up"
-            if angle < 90 and position == "up":  
-                position = "down"
-                rep_count += 1
-                print(f"Reps: {rep_count}/{reps}")
-
-        # Show camera feed
-        cv2.imshow("Exercise Tracker", frame)
+            mp_drawing.draw_landmarks(
+                frame, 
+                results.pose_landmarks, 
+                mp_pose.POSE_CONNECTIONS,
+                mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
+                mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2)
+            )
+        
+        # Display instruction text
+        cv2.putText(frame, "Camera Test Mode - Press 'q' to exit", (20, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        
+        cv2.imshow("Camera Test", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            break  # Press 'q' to quit
+            break
+            
+    cap.release()
+    cv2.destroyAllWindows()
+    print("Camera test ended.")
 
-        # Check if reps completed
-        if rep_count >= reps:
-            print(f"Set {set_count + 1} complete!")
-            set_count += 1
-            rep_count = 0  # Reset reps
-            time.sleep(rest_time)  # Rest time
+def count_reps(landmarks, exercise_type):
+    """
+    Basic implementation of rep counting based on specific joint movements.
+    This would need to be customized for each exercise type.
+    """
+    # Example for squat: track hip movement up and down
+    if exercise_type.lower() == "squat":
+        # Get hip landmark (e.g., hip point)
+        hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
+        return hip.y  # Return y-position for threshold checking
+    
+    # Example for push-up: track shoulder movement
+    elif exercise_type.lower() in ["pushup", "push-up", "push up"]:
+        shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value]
+        return shoulder.y
+    
+    # Default case: track movement of wrist for generic exercises
+    else:
+        wrist = landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value]
+        return wrist.y
+
+def start_tracking(exercise_name, exercise_type, exercise_details):
+    """Tracks exercise movements based on the given type and details."""
+    print(f"Tracking {exercise_name} (Type: {exercise_type}) with details: {exercise_details}")
+    
+    # Parse details
+    details = exercise_details if isinstance(exercise_details, dict) else {}
+    workout_type = exercise_type.lower()  # Use the specified exercise type
+    sets = int(details.get("sets", 1))
+    rest_time = int(details.get("rest", 30))
+    
+    # Type-specific parameters
+    # Handle the specific exercise types from your app
+    if workout_type == "reps":
+        reps = int(details.get("reps", 10))
+        duration = 0
+    elif workout_type == "time":
+        reps = 0
+        duration = int(details.get("time", 30))
+    elif workout_type == "hold":
+        reps = 0
+        duration = int(details.get("hold", 30))
+    else:
+        # Default case
+        reps = int(details.get("reps", 10))
+        duration = int(details.get("time", 30))
+    
+    print(f"Exercise configuration: {workout_type} - Sets: {sets}, Rest: {rest_time}s")
+    if workout_type == "reps":
+        print(f"Target reps: {reps}")
+    elif workout_type in ["time", "hold"]:
+        print(f"Target duration: {duration}s")
+    
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("Error: Camera could not be opened for tracking.")
+        return
+    
+    # Tracking variables
+    current_set = 1
+    current_rep = 0
+    state = "exercise"  # can be "exercise" or "rest"
+    start_time = time.time()
+    last_rep_position = 0
+    rep_threshold = 0.05  # Threshold for detecting a rep
+    rep_direction_up = True  # Track rep movement direction
+    
+    print(f"Starting exercise: {exercise_name}, Set 1 of {sets}")
+    
+    while current_set <= sets:
+        ret, frame = cap.read()
+        if not ret:
+            print("Error: Failed to capture frame.")
+            break
+
+        # Current time elapsed
+        current_time = time.time()
+        elapsed = current_time - start_time
+        
+        # Convert to RGB for MediaPipe
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = pose.process(rgb_frame)
+        
+        # Draw landmarks
+        if results.pose_landmarks:
+            mp_drawing.draw_landmarks(
+                frame, 
+                results.pose_landmarks, 
+                mp_pose.POSE_CONNECTIONS,
+                mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
+                mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2)
+            )
+            
+            # Process based on exercise type
+            if state == "exercise":
+                if workout_type == "reps":
+                    # Rep counting logic
+                    landmarks = results.pose_landmarks.landmark
+                    current_position = count_reps(landmarks, exercise_name)
+                    
+                    # Simple rep detection based on position change
+                    if rep_direction_up and last_rep_position - current_position > rep_threshold:
+                        rep_direction_up = False
+                    elif not rep_direction_up and current_position - last_rep_position > rep_threshold:
+                        rep_direction_up = True
+                        current_rep += 1
+                        print(f"Rep {current_rep} completed")
+                    
+                    last_rep_position = current_position
+                    
+                    # Display rep count
+                    cv2.putText(frame, f"Reps: {current_rep}/{reps}", (50, 100), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    
+                    # Check if all reps are done
+                    if current_rep >= reps:
+                        if current_set < sets:
+                            state = "rest"
+                            start_time = current_time
+                            current_rep = 0
+                            print(f"Set {current_set} completed. Starting rest period of {rest_time}s")
+                        else:
+                            print(f"Exercise {exercise_name} completed!")
+                            break
+                            
+                elif workout_type in ["time", "hold"]:
+                    # Timer countdown
+                    remaining = max(0, duration - elapsed)
+                    cv2.putText(frame, f"Time: {int(remaining)}s", (50, 100), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    
+                    # Check if time is up
+                    if elapsed >= duration:
+                        if current_set < sets:
+                            state = "rest"
+                            start_time = current_time
+                            print(f"Set {current_set} completed. Starting rest period of {rest_time}s")
+                        else:
+                            print(f"Exercise {exercise_name} completed!")
+                            break
+            
+            elif state == "rest":
+                # Rest countdown
+                remaining = max(0, rest_time - elapsed)
+                cv2.putText(frame, f"REST: {int(remaining)}s", (50, 100), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                
+                # Check if rest is over
+                if elapsed >= rest_time:
+                    state = "exercise"
+                    start_time = current_time
+                    current_set += 1
+                    print(f"Starting Set {current_set} of {sets}")
+        
+        # Display exercise info
+        cv2.putText(frame, f"Exercise: {exercise_name}", (50, 50), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv2.putText(frame, f"Set: {current_set}/{sets}", (50, 150), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv2.putText(frame, f"State: {state.upper()}", (50, 200), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv2.putText(frame, "Press 'q' to quit", (50, 250), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+        cv2.imshow("Exercise Tracking", frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            print("Exercise tracking stopped by user")
+            break
 
     cap.release()
     cv2.destroyAllWindows()
-    print(f"Completed {exercise_name}")
+    print(f"Finished tracking {exercise_name}")
 
-# Function to track time-based exercises
-def track_time(exercise_name, duration):
-    print(f"Tracking {exercise_name} for {duration} seconds")
-    time.sleep(duration)
-    print(f"Completed {exercise_name}")
-
-# Function to track hold-based exercises
-def track_hold(exercise_name, hold_duration):
-    print(f"Tracking hold {exercise_name} for {hold_duration} seconds")
-    time.sleep(hold_duration)
-    print(f"Hold complete for {exercise_name}")
-
-# Function to calculate angle between three points
-def calculate_angle(a, b, c):
-    a = np.array([a.x, a.y])  
-    b = np.array([b.x, b.y])  
-    c = np.array([c.x, c.y])  
-
-    ba = a - b
-    bc = c - b
-
-    cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
-    angle = np.arccos(cosine_angle)
-    return np.degrees(angle)
-
-# Main execution
 if __name__ == "__main__":
-    exercise_name = sys.argv[1]
-    exercise_type = sys.argv[2]
-    exercise_details = json.loads(sys.argv[3])  
+    print("Arguments received:", sys.argv)  # Debugging
 
-    if exercise_type == "reps":
-        track_reps(exercise_name, exercise_details)
-    elif exercise_type == "time":
-        track_time(exercise_name, exercise_details.get("time", 30))
-    elif exercise_type == "hold":
-        track_hold(exercise_name, exercise_details.get("hold", 15))
+    if len(sys.argv) > 1 and sys.argv[1] == "camera":
+        print("Running in camera test mode...")
+        open_camera()
+    elif len(sys.argv) > 3:
+        exercise_name = sys.argv[1]
+        exercise_type = sys.argv[2]
+        try:
+            exercise_details = json.loads(sys.argv[3])  # Parse JSON data
+        except json.JSONDecodeError as e:
+            print(f"Error parsing exercise details JSON: {e}")
+            print(f"Received string: {sys.argv[3]}")
+            exercise_details = {}
+        start_tracking(exercise_name, exercise_type, exercise_details)
     else:
-        print("Unknown exercise type")
+        print("Error: Invalid arguments. Expected 'camera' or exercise details.")
+        print("Usage:")
+        print("  python tracker.py camera")
+        print("  python tracker.py <exercise_name> <exercise_type> <exercise_details_json>")
