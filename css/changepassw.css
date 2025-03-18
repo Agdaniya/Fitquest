@@ -1,6 +1,6 @@
 :root {
-    --primary-color: #3498db;
-    --secondary-color: #e74c3c;
+    --primary-color: #4D55CC;
+    --secondary-color: #0077be;
     --background-color: #ecf0f1;
     --text-color: #2c3e50;
     --light-accent: #bdc3c7;
@@ -14,8 +14,8 @@
 }
 
 body {
-    background-color: var(--background-color);
-    color: var(--text-color);
+    background-color: #ADB2D4;
+    color: #4D55CC;
     line-height: 1.6;
 }
 
@@ -26,7 +26,7 @@ body {
 
 .sidebar {
     width: 280px;
-    background-color: #f8f9fa;
+    background-color: #ADB2D4;
     color: var(--text-color);
     padding: 20px;
     position: fixed;
