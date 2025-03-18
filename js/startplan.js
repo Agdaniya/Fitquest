@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAOgdbddMw93MExNBz3tceZ8_NrNAl5q40",
@@ -18,7 +19,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const dbRealtime = getDatabase(app);
 const dbFirestore = getFirestore(app);
-
+let userId = null;
 // Store workout state
 let currentWorkout = {
     exercises: [],
@@ -125,8 +126,11 @@ document.getElementById("start-plan").addEventListener("click", async () => {
     const user = auth.currentUser;
     if (!user) {
         console.log("No user signed in.");
+        alert("Please log in to start a workout plan.");
         return;
     }
+    
+    userId = user.uid; // Store the user ID
 
     try {
         // If workout is already in progress, stop it
@@ -159,10 +163,23 @@ const startWorkoutSession = async (exercisesData) => {
         return;
     }
     
+    // Load completed exercises to filter out already completed ones
+    const completedExercisesData = await loadCompletedExercises(userId);
+    
+    // Filter out completed exercises
+    const availableExercises = flattenedExercises.filter(exercise => 
+        !completedExercisesData || !completedExercisesData[exercise.exercise]
+    );
+    
+    if (availableExercises.length === 0) {
+        alert("All exercises are completed for today!");
+        return;
+    }
+    
     // Initialize workout state
     currentWorkout = {
         exercises: exercisesData,
-        flattenedExercises: flattenedExercises,
+        flattenedExercises: availableExercises,
         currentExerciseIndex: -1,
         inProgress: true
     };
@@ -196,6 +213,22 @@ const startWorkoutSession = async (exercisesData) => {
     }
 };
 
+const loadCompletedExercises = async (userId) => {
+    if (!userId) return {};
+    
+    const completedRef = ref(dbRealtime, `users/${userId}/completedExercises`);
+    try {
+        const snapshot = await get(completedRef);
+        if (snapshot.exists()) {
+            return snapshot.val(); // Returns an object of completed exercises
+        }
+    } catch (error) {
+        console.error("Error fetching completed exercises:", error);
+    }
+    return {};
+};
+
+// This is the key function that needs fixing
 const moveToNextExercise = async () => {
     // Move to next exercise
     currentWorkout.currentExerciseIndex++;
@@ -230,13 +263,8 @@ const moveToNextExercise = async () => {
         const data = await response.json();
         console.log(`${exercise.exercise} tracking started:`, data);
         
-        // Automatically move to next exercise after estimated completion time
-        // This is a basic approach - ideally the Python script would signal completion
-        const completionTime = calculateExerciseTime(exercise);
-        setTimeout(() => {
-            markExerciseCompleted();
-            moveToNextExercise();
-        }, completionTime * 1000);
+        // Set up continuous checking for exercise completion
+        startExerciseCompletionCheck(exercise);
         
     } catch (err) {
         console.error(`Error tracking ${exercise.exercise}:`, err);
@@ -245,6 +273,52 @@ const moveToNextExercise = async () => {
             moveToNextExercise();
         }, 3000);
     }
+};
+
+// New function to periodically check if an exercise is complete
+const startExerciseCompletionCheck = (exercise) => {
+    const completionTime = calculateExerciseTime(exercise);
+    let elapsedTime = 0;
+    const checkInterval = 1000; // Check every second
+    
+    const timer = setInterval(() => {
+        elapsedTime += checkInterval / 1000;
+        
+        // Update time remaining in UI
+        const remainingTime = Math.max(0, completionTime - elapsedTime);
+        updateExerciseTimeUI(exercise, remainingTime);
+        
+        // If time is up, consider exercise complete
+        if (elapsedTime >= completionTime) {
+            clearInterval(timer);
+            console.log(`Exercise ${exercise.exercise} completed based on time.`);
+            
+            // Mark as complete and move to next exercise
+            markExerciseCompleted(exercise)
+                .then(() => moveToNextExercise())
+                .catch(err => {
+                    console.error(`Error completing ${exercise.exercise}:`, err);
+                    moveToNextExercise(); // Move to next exercise even if there's an error
+                });
+        }
+    }, checkInterval);
+    
+    // Store the timer ID in the exercise object to clear it if needed
+    exercise.completionTimer = timer;
+};
+
+// New function to update time remaining in UI
+const updateExerciseTimeUI = (exercise, remainingTime) => {
+    const timeElement = document.getElementById("exercise-time-remaining");
+    if (!timeElement) {
+        const timeDisplay = document.createElement("p");
+        timeDisplay.id = "exercise-time-remaining";
+        timeDisplay.className = "time-display";
+        document.getElementById("current-exercise-details").appendChild(timeDisplay);
+    }
+    
+    document.getElementById("exercise-time-remaining").textContent = 
+        `Time remaining: ${Math.round(remainingTime)}s`;
 };
 
 const calculateExerciseTime = (exercise) => {
@@ -271,9 +345,51 @@ const calculateExerciseTime = (exercise) => {
     return totalTime + 10;
 };
 
-const markExerciseCompleted = () => {
+const markExerciseCompleted = async (exercise) => {
+    if (!exercise) {
+        console.error("No exercise provided to markExerciseCompleted");
+        return;
+    }
+    
+    // Clear any ongoing timers for this exercise
+    if (exercise.completionTimer) {
+        clearInterval(exercise.completionTimer);
+    }
+    
     completedExercises++;
     updateProgressDisplay();
+
+    if (userId) {
+        // Save to Firebase that this exercise is completed
+        await update(ref(dbRealtime, `users/${userId}/completedExercises/${exercise.exercise}`), {
+            completed: true,
+            timestamp: Date.now()
+        });
+    }
+
+    // Also update the backend to ensure it knows the exercise is complete
+    try {
+        await fetch("http://localhost:5001/complete-exercise", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ exercise: exercise.exercise })
+        });
+    } catch (err) {
+        console.error("Error marking exercise as complete on backend:", err);
+    }
+
+    // Update UI to reflect completion status
+    document.querySelectorAll(".exercise-card").forEach(card => {
+        if (card.querySelector("h4")?.textContent === exercise.exercise) {
+            const btn = card.querySelector("button");
+            if (btn) {
+                btn.textContent = "✔ Completed";
+                btn.disabled = true;
+            }
+        }
+    });
+
+    console.log(`Exercise ${exercise.exercise} marked as completed`);
 };
 
 const updateExerciseUI = (exercise) => {
@@ -331,6 +447,15 @@ const stopWorkout = async () => {
 };
 
 const resetWorkout = () => {
+    // Clear any ongoing timers
+    if (currentWorkout.flattenedExercises) {
+        currentWorkout.flattenedExercises.forEach(exercise => {
+            if (exercise.completionTimer) {
+                clearInterval(exercise.completionTimer);
+            }
+        });
+    }
+    
     // Reset workout state
     currentWorkout = {
         exercises: [],
@@ -355,6 +480,11 @@ const resetWorkout = () => {
     const progressContainer = document.getElementById("workout-progress-container");
     if (progressContainer) {
         progressContainer.remove();
+    }
+    
+    const timeRemaining = document.getElementById("exercise-time-remaining");
+    if (timeRemaining) {
+        timeRemaining.remove();
     }
 };
 

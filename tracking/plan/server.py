@@ -3,6 +3,7 @@ import subprocess
 import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from tracker import complete_exercise
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -105,7 +106,25 @@ def stop_tracking():
             return jsonify({"message": "No active tracking to stop"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
+    
+@app.route('/complete-exercise', methods=['POST'])
+def complete_exercise_route():
+    """Handles the completion of an exercise."""
+    from flask import request, jsonify
+    try:
+        data = request.get_json()
+        exercise_name = data.get('exercise')
+        
+        if not exercise_name:
+            return jsonify({"status": "error", "message": "Missing exercise name"}), 400
+            
+        # Here you could add code to record the completion in a database
+        print(f"Exercise completed: {exercise_name}")
+        
+        return jsonify({"status": "success", "message": f"Exercise {exercise_name} marked as complete"}), 200
+    except Exception as e:
+        print(f"Error in complete_exercise: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.after_request
 def add_cors_headers(response):

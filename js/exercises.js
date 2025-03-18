@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAOgdbddMw93MExNBz3tceZ8_NrNAl5q40",
@@ -22,14 +23,33 @@ const dbFirestore = getFirestore(app);
 // Track progress data
 let totalExercises = 0;
 let completedExercises = 0;
-
+let userId = null;
 document.addEventListener("DOMContentLoaded", () => {
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            displayExercises(user.uid);
+            userId = user.uid; // Store the user ID
+            displayExercises(userId);
+        } else {
+            // Handle not logged in state
+            console.log("User not logged in");
+            document.getElementById("exercise-container").innerHTML = 
+                `<p>Please log in to view exercises.</p>`;
         }
     });
 });
+
+const loadCompletedExercises = async (userId) => {
+    const completedRef = ref(dbRealtime, `users/${userId}/completedExercises`);
+    try {
+        const snapshot = await get(completedRef);
+        if (snapshot.exists()) {
+            return snapshot.val(); // Returns an object of completed exercises
+        }
+    } catch (error) {
+        console.error("Error fetching completed exercises:", error);
+    }
+    return {};
+};
 
 const getFitnessLevel = async (userId) => {
     const userRef = ref(dbRealtime, `users/${userId}/fitnessLevel`);
@@ -59,53 +79,53 @@ const displayExercises = async (userId) => {
     }
 };
 
-const renderExercises = (exercises) => {
+const renderExercises = async (exercises) => {
     const container = document.getElementById("exercise-container");
     container.innerHTML = "";
+    const completedExercisesData = await loadCompletedExercises(userId);
     
-    // Reset exercise counters
+    // Initialize progress counters
     totalExercises = 0;
     completedExercises = 0;
     
     Object.keys(exercises).forEach(type => {
-        const section = document.createElement("div");
-        section.classList.add("exercise-section");
-        section.innerHTML = `<h3>${type.toUpperCase()}</h3>`;
-
         exercises[type].forEach(exercise => {
-            // Increment total exercises counter
-            totalExercises++;
+            totalExercises++; // Count total exercises
             
             const card = document.createElement("div");
             card.classList.add("exercise-card");
 
-            let details = `<h4>${exercise.exercise}</h4>
-                <p><strong>Category:</strong> ${exercise.type}</p>`;
-
-            if (exercise.type === "reps") {
-                details += `<p><strong>Reps:</strong> ${exercise.reps}</p>`;
-            } else if (exercise.type === "hold") {
-                details += `<p><strong>Hold Time:</strong> ${exercise.hold} seconds</p>`;
-            } else if (exercise.type === "time") {
-                details += `<p><strong>Duration:</strong> ${exercise.time} seconds</p>`;
+            let isCompleted = completedExercisesData[exercise.exercise];
+            
+            // Count completed exercises
+            if (isCompleted) {
+                completedExercises++;
+                card.classList.add("completed"); // Add visual class
             }
-            details += `<p><strong>Rest Time:</strong> ${exercise.rest} seconds</p>`;
-            
-            const startButton = document.createElement("button");
-            startButton.textContent = "Start";
-            startButton.classList.add("start-btn");
-            startButton.addEventListener("click", () => startExercise(exercise, card));
-            
-            card.innerHTML = details;
-            card.appendChild(startButton);
-            section.appendChild(card);
+
+            card.innerHTML = `
+                <h4>${exercise.exercise}</h4>
+                <p>Type: ${exercise.type}</p>
+                <p>Sets: ${exercise.sets || 1}</p>
+                <p>Rest: ${exercise.rest || 30}s</p>
+                <button class="start-btn" ${isCompleted ? 'disabled' : ''}>
+                    ${isCompleted ? '✔ Completed' : 'Start'}
+                </button>
+            `;
+
+            const startButton = card.querySelector(".start-btn");
+            if (!isCompleted) {
+                startButton.addEventListener("click", () => startExercise(exercise, card));
+            }
+
+            container.appendChild(card);
         });
-        container.appendChild(section);
     });
-    
-    // Initialize progress bar at 0%
+
     updateProgressBar();
+    addProgressSummary(); 
 };
+
 
 const updateProgressBar = () => {
     const progressBar = document.getElementById("progress-bar");
@@ -115,31 +135,105 @@ const updateProgressBar = () => {
     
     const progressPercentage = totalExercises > 0 ? Math.round((completedExercises / totalExercises) * 100) : 0;
     
+    // Animate the progress bar
     progressBar.style.width = `${progressPercentage}%`;
-    progressText.textContent = `Progress: ${progressPercentage}%`;
+    progressText.textContent = `Progress: ${completedExercises} of ${totalExercises} (${progressPercentage}%)`;
+    
+    // Add visual feedback based on progress
+    if (progressPercentage === 100) {
+        progressBar.style.backgroundColor = "#4CAF50"; // Green for complete
+        progressText.textContent = `Completed! All ${totalExercises} exercises done.`;
+    } else if (progressPercentage >= 75) {
+        progressBar.style.backgroundColor = "#8BC34A"; // Light green for almost complete
+    } else if (progressPercentage >= 50) {
+        progressBar.style.backgroundColor = "#FFC107"; // Amber for halfway
+    } else if (progressPercentage >= 25) {
+        progressBar.style.backgroundColor = "#FF9800"; // Orange for started
+    } else {
+        progressBar.style.backgroundColor = "#F44336"; // Red for just beginning
+    }
 };
-
-const markExerciseCompleted = () => {
+// Fix the markExerciseCompleted function to accept exercise name parameter
+const markExerciseCompleted = async (exerciseName) => {
     completedExercises++;
     updateProgressBar();
+
+    if (userId) {
+        await update(ref(dbRealtime, `users/${userId}/completedExercises/${exerciseName}`), {
+            completed: true,
+            timestamp: Date.now()
+        });
+    }
+
+    // Hide completed exercises dynamically
+    document.querySelectorAll('.exercise-card').forEach(card => {
+        if (card.querySelector('h4').textContent === exerciseName) {
+            card.classList.add('completed');
+            card.querySelector('button').textContent = "Completed";
+            card.querySelector('button').disabled = true;
+        }
+    });
 };
 
+// Fix port number in the fetch calls
+// In exercises.js, modify the startExercise function:
 const startExercise = (exercise, card) => {
     card.querySelector("button").disabled = true;
-    if (exercise.type === "reps") {
-        fetch(`http://localhost:5000/track/start-${exercise.exercise.toLowerCase()}`, { method: "POST" })
-            .then(() => checkCompletion(exercise, card));
-    } else {
-        let duration = exercise.type === "hold" ? exercise.hold : exercise.time;
-        let countdown = duration;
-        const interval = setInterval(() => {
-            card.querySelector("button").textContent = `Time left: ${countdown}s`;
-            if (--countdown < 0) {
-                clearInterval(interval);
-                showRestPeriod(exercise, card);
-            }
-        }, 1000);
-    }
+    card.querySelector("button").textContent = "Starting...";
+    
+    // First start the camera
+    fetch(`http://localhost:5001/start-camera`, { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log("Camera started:", data);
+        
+        // Now start the specific exercise
+        return fetch(`http://localhost:5001/start-exercise`, { 
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                name: exercise.exercise, 
+                type: exercise.type, 
+                details: exercise 
+            })
+        });
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(() => {
+        if (exercise.type === "reps") {
+            // For rep-based exercises, check completion status
+            checkCompletion(exercise, card);
+        } else {
+            // For time-based exercises, start the timer
+            let duration = exercise.type === "hold" ? exercise.hold : exercise.time;
+            let countdown = duration;
+            const interval = setInterval(() => {
+                card.querySelector("button").textContent = `Time left: ${countdown}s`;
+                if (--countdown < 0) {
+                    clearInterval(interval);
+                    showRestPeriod(exercise, card);
+                }
+            }, 1000);
+        }
+    })
+    .catch(error => {
+        console.error("Error in exercise start sequence:", error);
+        card.querySelector("button").textContent = "Error - Try again";
+        card.querySelector("button").disabled = false;
+    });
 };
 
 const showRestPeriod = (exercise, card) => {
@@ -150,22 +244,72 @@ const showRestPeriod = (exercise, card) => {
             clearInterval(interval);
             card.querySelector("button").textContent = "Completed";
             card.querySelector("button").disabled = true;
-            markExerciseCompleted(); 
+            markExerciseCompleted(exercise.exercise);
+            
+            // Stop tracking/camera when exercise is complete
+            fetch(`http://localhost:5001/stop-tracking`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            }).catch(err => {
+                console.error("Error stopping tracking:", err);
+            });
         }
     }, 1000);
 };
 
 const checkCompletion = (exercise, card) => {
     const checkInterval = setInterval(() => {
-        fetch(`http://localhost:5000/track/get-${exercise.exercise.toLowerCase()}-count`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.count >= exercise.reps) {
-                    card.querySelector("button").textContent = "Completed";
-                    card.querySelector("button").disabled = true;
-                    markExerciseCompleted(); 
-                    clearInterval(checkInterval); 
-                }
-            });
+        fetch(`http://localhost:5001/complete-exercise`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ exercise: exercise.exercise })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === "success") {
+                clearInterval(checkInterval);
+                card.querySelector("button").textContent = "Completed";
+                card.querySelector("button").disabled = true;
+                markExerciseCompleted(exercise.exercise);
+                
+                // Stop tracking/camera when exercise is complete
+                fetch(`http://localhost:5001/stop-tracking`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                }).catch(err => {
+                    console.error("Error stopping tracking:", err);
+                });
+            }
+        })
+        .catch(err => {
+            console.error("Error checking completion:", err);
+        });
     }, 3000);
+};
+
+const addProgressSummary = () => {
+    let summaryElement = document.getElementById("exercise-summary");
+    
+    if (!summaryElement) {
+        summaryElement = document.createElement("div");
+        summaryElement.id = "exercise-summary";
+        summaryElement.className = "exercise-summary";
+        
+        const container = document.getElementById("exercise-container");
+        container.parentNode.insertBefore(summaryElement, container);
+    }
+    
+    const progressPercentage = totalExercises > 0 ? Math.round((completedExercises / totalExercises) * 100) : 0;
+    
+    summaryElement.innerHTML = `
+        <h3>Your Progress</h3>
+        <div class="progress-bar-container">
+            <div id="progress-bar" class="progress-bar" style="width: ${progressPercentage}%"></div>
+        </div>
+        <p id="progress-text">Progress: ${completedExercises} of ${totalExercises} (${progressPercentage}%)</p>
+        <p>${progressPercentage === 100 ? 
+            'Great job! You completed all exercises.' : 
+            `You have ${totalExercises - completedExercises} exercises remaining.`}
+        </p>
+    `;
 };

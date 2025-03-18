@@ -16,7 +16,8 @@ def open_camera():
     if not cap.isOpened():
         print("Error: Camera could not be opened.")
         return
-    
+    cv2.namedWindow('Squat Tracker', cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty('Squat Tracker', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     print("Camera opened. Press 'q' to exit camera test mode.")
     
     while True:
@@ -224,6 +225,20 @@ def start_tracking(exercise_name, exercise_type, exercise_details):
     cv2.destroyAllWindows()
     print(f"Finished tracking {exercise_name}")
 
+# Add this function to tracker.py at the end of the file, before the if __name__ block
+def complete_exercise():
+    """Marks the current exercise as complete."""
+    from flask import jsonify
+    try:
+        # You should also add logic here to update any relevant data about the completed exercise
+        # For example, storing completion data to a database
+        print("Exercise completed!")
+        
+        return jsonify({"status": "success", "message": "Exercise marked as complete"}), 200
+    except Exception as e:
+        print(f"Error completing exercise: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+    
 if __name__ == "__main__":
     print("Arguments received:", sys.argv)  # Debugging
 

@@ -297,23 +297,45 @@ function showNotification(message) {
             });
         }*/
             
-async function fetchUserFitnessLevel(userId) {
-    try {
-        // Fetch user's fitness level from Realtime Database
-        const userRef = ref(database, `users/${userId}`);
-        const snapshot = await get(userRef);
-        
-        if (snapshot.exists()) {
-            const userData = snapshot.val();
-            const fitnessLevel = userData.fitnessLevel || 'Beginner';
-            updateFitnessLevelDisplay(fitnessLevel);
-            // Fetch exercises based on fitness level from Firestore
-            await fetchExercisesForFitnessLevel(fitnessLevel);
-        }
-    } catch (error) {
-        console.error('Error fetching user fitness level:', error);
-    }
-}
+            async function fetchUserFitnessLevel(userId) {
+                try {
+                    const userRef = ref(database, `users/${userId}`);
+                    const snapshot = await get(userRef);
+                    
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        let fitnessLevel = userData.fitnessLevel; // Check if fitness level is set
+                        let userStage = userData.stage; // Check if stage is set
+            
+                        // If no fitness level exists, set it to "beginner" and store in Firebase
+                        if (!fitnessLevel) {
+                            fitnessLevel = "beginner";
+                            await update(userRef, { fitnessLevel }); // Save fitness level
+                        }
+            
+                        // If no stage exists, initialize based on fitness level
+                        if (!userStage) {
+                            if (fitnessLevel === "beginner") {
+                                userStage = "beginner1";
+                            } else if (fitnessLevel === "intermediate") {
+                                userStage = "intermediate1";
+                            } else {
+                                userStage = "advanced1";
+                            }
+            
+                            // Save the initial stage in Firebase
+                            await update(userRef, { stage: userStage });
+                        }
+            
+                        updateFitnessLevelDisplay(fitnessLevel);
+                        await fetchExercisesForFitnessLevel(fitnessLevel);
+                    }
+                } catch (error) {
+                    console.error("Error fetching user fitness level:", error);
+                }
+            }
+            
+            
 function updateFitnessLevelDisplay(fitnessLevel) {
     const fitnessLevelDisplay = document.getElementById('fitness-level');
     if (fitnessLevelDisplay) {
