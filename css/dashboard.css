@@ -1,7 +1,7 @@
 :root {
-    --primary-color: #3498db;
+    --primary-color: #4D55CC;
     --secondary-color: #e74c3c;
-    --background-color: #ecf0f1;
+    --background-color: #B5A8D5;
     --text-color: #2c3e50;
     --light-accent: #bdc3c7;
 }
@@ -26,7 +26,7 @@ body {
 
 .sidebar {
     width: 280px;
-    background-color: #f8f9fa;
+    background-color: #B5A8D5;
     color: var(--text-color);
     padding: 20px;
     position: fixed;
@@ -139,8 +139,33 @@ body {
     font-weight: bold;
 }
 
+.track{
+    color: #211C84;
+    text-align:center;
+    font-size: 25px;
+}
+
+.section-motivational-quote{
+    color: #211C84;
+    text-align: center;
+}
+
+#motivation{
+    color: #211C84;
+    text-align: center;
+    font-size: 25px;
+}
+
+#quote{
+    color: #211C84;
+    font-size: 28px;
+    text-align: center;
+    font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    font-weight: 500;
+}
+
 .water-intake {
-    background-color: #f0f8ff;
+    background-color: #B5A8D5;
     border-radius: 10px;
     padding: 20px;
     text-align: center;
@@ -270,7 +295,7 @@ body {
 }
 
 .notification.success {
-    background-color: #4caf50;
+    background-color: #0077be;
     color: white;
 }
 

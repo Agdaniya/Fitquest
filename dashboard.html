@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/dashboard.css">
     <link rel="stylesheet" href="./css/caltracker.css">
+   
+
 </head>
 <body>
     <div id="notification-container"></div>
@@ -34,11 +36,11 @@
                 <span class="camera-icon">📸</span>
                 Track your calorie intake
             </button>
-            <p>Track your progress and stay on top of your fitness goals.</p>
+            <p class="track">Track your progress and stay on top of your fitness goals.</p>
         </div>
 
-        <div class="section motivational-quote">
-            <h3>💪 Today's Motivation</h3>
+        <div class="section-motivational-quote">
+            <p id="motivation">💪 Today's Motivation</p>
             <p id="quote">Loading...</p>
         <br>
         </div>
@@ -127,7 +129,7 @@ async function fetchQuote() {
     };
     
     try {
-        document.getElementById("quote").innerText = "Fetching a new quote...";
+        document.getElementById("quote").innerText = " ";
         
         // Make the request to the Gemini API with cache busting
         const response = await fetch(`${url}?nocache=${timestamp}`, {
