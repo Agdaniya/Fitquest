@@ -1,7 +1,7 @@
 :root {
-    --primary-color: #3498db;
+    --primary-color: #4D55CC;
     --secondary-color: #e74c3c;
-    --background-color: #ecf0f1;
+    --background-color: #ADB2D4;
     --text-color: #2c3e50;
     --light-accent: #bdc3c7;
 }
@@ -26,7 +26,7 @@ body {
 
 .sidebar {
     width: 280px;
-    background-color: #f8f9fa;
+    background-color: #ADB2D4;
     color: var(--text-color);
     padding: 20px;
     position: fixed;
@@ -106,7 +106,7 @@ body {
     justify-content: center;
     margin-bottom: 20px;
     padding: 20px;
-    background-color: #f0f4f7;
+    background-color: #ADB2D4;
     border-radius: 10px;
     text-align: center;
     transition: transform 0.3s ease, box-shadow 0.3s ease;

@@ -7,6 +7,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/dashboard.css">
     <link rel="stylesheet" href="./css/caltracker.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+
 </head>
 <body>
     <div id="notification-container"></div>
@@ -34,15 +38,8 @@
                 <span class="camera-icon">📸</span>
                 Track your calorie intake
             </button>
-            <p>Track your progress and stay on top of your fitness goals.</p>
+            <p class="track">Track your progress and stay on top of your fitness goals.</p>
         </div>
-
-        <div class="section motivational-quote">
-            <h3>💪 Today's Motivation</h3>
-            <p id="quote">Loading...</p>
-        <br>
-        </div>
-
         <div class="section stats">
             <div class="stat-card">
                 <h3>Todays's Goal</h3>
@@ -65,9 +62,25 @@
                 <span id="fitness-level">Beginner</span>
             </div>
         </div>
+        <div class="section-motivational-quote">
+            <p id="motivation">Today's Motivation</p>
+            <p id="quote">Loading...</p>
+        <br>
+        </div>
+
+        
 
         <div class="section workouts">
             <!-- Exercises will be dynamically populated here -->
+        </div>
+        <p class="para-head">Strong mind, strong body, unstoppable you</p>
+        <div class="para">
+            
+            <p class="para-content">Every drop of sweat, every step forward, and every push beyond your limits brings you closer to your best self. Fitness is not about perfection—it’s about progress. Stay committed, stay consistent, and let the journey transform you. Your body is capable of amazing things—trust it, challenge it, and watch yourself grow stronger.
+
+                FitQuest is here to guide and motivate you. Let’s crush those goals together!</p>
+            <img id="dashimage" src="asset\dashboard (2).png" alt="">
+
         </div>
 
         <section class="water-intake">
@@ -127,7 +140,7 @@ async function fetchQuote() {
     };
     
     try {
-        document.getElementById("quote").innerText = "Fetching a new quote...";
+        document.getElementById("quote").innerText = " ";
         
         // Make the request to the Gemini API with cache busting
         const response = await fetch(`${url}?nocache=${timestamp}`, {
@@ -177,7 +190,7 @@ async function fetchQuote() {
             "Make yourself proud.",
             "What seems impossible today will one day become your warm-up.",
             "Sweat is just fat crying.",
-            "The hardest lift of all is lifting your butt off the couch.",
+            "The hardest lift of all is lifting yourself off the couch.",
             "Be stronger than your excuses."
         ];
         
