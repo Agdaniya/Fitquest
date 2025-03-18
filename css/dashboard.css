@@ -1,7 +1,7 @@
 :root {
     --primary-color: #4D55CC;
     --secondary-color: #e74c3c;
-    --background-color: #B5A8D5;
+    --background-color: #ADB2D4;
     --text-color: #2c3e50;
     --light-accent: #bdc3c7;
 }
@@ -26,7 +26,7 @@ body {
 
 .sidebar {
     width: 280px;
-    background-color: #B5A8D5;
+    background-color: #ADB2D4;
     color: var(--text-color);
     padding: 20px;
     position: fixed;
@@ -143,6 +143,8 @@ body {
     color: #211C84;
     text-align:center;
     font-size: 25px;
+    font-family: "Montserrat", sans-serif;
+
 }
 
 .section-motivational-quote{
@@ -154,9 +156,17 @@ body {
     color: #211C84;
     text-align: center;
     font-size: 25px;
+    font-family: "Montserrat", sans-serif;
+    
 }
 
 #quote{
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px; /* Smooth rounded corners */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow effect */
+    max-width: auto; 
+    max-height: 300px;/* Adjust width as needed */ /* Optional: Accent border */
     color: #211C84;
     font-size: 28px;
     text-align: center;
@@ -165,7 +175,7 @@ body {
 }
 
 .water-intake {
-    background-color: #B5A8D5;
+    background-color: #ADB2D4;
     border-radius: 10px;
     padding: 20px;
     text-align: center;
@@ -307,6 +317,35 @@ body {
 .notification.error {
     background-color: #f44336;
     color: white;
+}
+
+.para{
+    display: flex; /* Enables horizontal layout */
+    align-items: center; /* Aligns items vertically in the center */
+    gap: 20px; /* Adds space between the image and text */
+}
+.para-head{
+    font-size: 30px;
+    font-weight: 600;
+    text-align: center;
+    color: #211C84;
+    font-family: "Montserrat", sans-serif;
+    
+}
+
+.para-content{
+    padding-left: 10px;
+    font-size: 20px;
+    color: #211C84;
+    font-weight: 300;
+    font-family: "Montserrat", sans-serif;
+
+}
+
+#dashimage{
+    height: 300px;
+    width: 400px;
+    align-items:end;
 }
 
 @keyframes slideIn {
