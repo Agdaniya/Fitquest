@@ -1,9 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, set, get , update , onValue} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
 const firebaseConfig = {
     apiKey: "AIzaSyAOgdbddMw93MExNBz3tceZ8_NrNAl5q40",
     authDomain: "fitquest-9b891.firebaseapp.com",
@@ -23,34 +21,80 @@ const dbFirestore = getFirestore(app);
 // Track progress data
 let totalExercises = 0;
 let completedExercises = 0;
-let userId = null;
+let completedExercisesList = {};
+
+const initializeUserData = async (userId) => {
+    const userRef = ref(dbRealtime, `users/${userId}`);
+    const snapshot = await get(userRef);
+    
+    if (!snapshot.exists() || !snapshot.val().stage) {
+        // User doesn't have stage set
+        await set(ref(dbRealtime, `users/${userId}/stage`), 1);
+    }
+    
+    // Clear completed exercises if it's a new day
+    const lastActiveRef = ref(dbRealtime, `users/${userId}/lastActive`);
+    const lastActiveSnapshot = await get(lastActiveRef);
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (!lastActiveSnapshot.exists() || lastActiveSnapshot.val() !== today) {
+        // It's a new day, clear completed exercises
+        await set(ref(dbRealtime, `users/${userId}/lastActive`), today);
+    }
+};
+
 document.addEventListener("DOMContentLoaded", () => {
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
-            userId = user.uid; // Store the user ID
-            displayExercises(userId);
-        } else {
-            // Handle not logged in state
-            console.log("User not logged in");
-            document.getElementById("exercise-container").innerHTML = 
-                `<p>Please log in to view exercises.</p>`;
+            // Initialize user data
+            await initializeUserData(user.uid);
+            
+            // Load completed exercises for today
+            await setupCompletedExercisesListener(user.uid);
+            
+            // Display exercises for user
+            displayExercises(user.uid);
         }
     });
 });
-
-const loadCompletedExercises = async (userId) => {
-    const completedRef = ref(dbRealtime, `users/${userId}/completedExercises`);
-    try {
-        const snapshot = await get(completedRef);
+const setupCompletedExercisesListener = (userId) => {
+    const today = new Date().toISOString().split('T')[0];
+    const completedRef = ref(dbRealtime, `users/${userId}/completedExercises/${today}`);
+    
+    // Set up a real-time listener
+    onValue(completedRef, (snapshot) => {
         if (snapshot.exists()) {
-            return snapshot.val(); // Returns an object of completed exercises
+            completedExercisesList = snapshot.val();
+            console.log("Updated completed exercises:", completedExercisesList);
+            updateCompletedExercisesUI();
+        } else {
+            completedExercisesList = {};
         }
-    } catch (error) {
-        console.error("Error fetching completed exercises:", error);
-    }
-    return {};
+    });
 };
-
+const updateCompletedExercisesUI = () => {
+    completedExercises = 0;
+    
+    document.querySelectorAll('.exercise-card').forEach(card => {
+        const startBtn = card.querySelector('button');
+        const exerciseTitle = card.querySelector('h4').textContent;
+        const exerciseType = card.querySelector('p:nth-child(2)').textContent.split(':')[1].trim();
+        const exerciseId = `${exerciseType.toLowerCase()}_${exerciseTitle}`.replace(/\s+/g, '_').toLowerCase();
+        
+        if (completedExercisesList[exerciseId]) {
+            startBtn.textContent = "Completed";
+            startBtn.disabled = true;
+            card.classList.add("completed");
+            completedExercises++;
+        } else if (!card.classList.contains("in-progress")) {
+            startBtn.textContent = "Start";
+            startBtn.disabled = false;
+            card.classList.remove("completed");
+        }
+    });
+    
+    updateProgressBar();
+};
 const getFitnessLevel = async (userId) => {
     const userRef = ref(dbRealtime, `users/${userId}/fitnessLevel`);
     try {
@@ -79,53 +123,66 @@ const displayExercises = async (userId) => {
     }
 };
 
-const renderExercises = async (exercises) => {
+const renderExercises = (exercises) => {
     const container = document.getElementById("exercise-container");
     container.innerHTML = "";
-    const completedExercisesData = await loadCompletedExercises(userId);
     
-    // Initialize progress counters
+    // Reset exercise counters
     totalExercises = 0;
     completedExercises = 0;
     
     Object.keys(exercises).forEach(type => {
+        const section = document.createElement("div");
+        section.classList.add("exercise-section");
+        section.innerHTML = `<h3>${type.toUpperCase()}</h3>`;
+
         exercises[type].forEach(exercise => {
-            totalExercises++; // Count total exercises
+            // Add category to exercise object
+            exercise.category = type;
+            
+            // Increment total exercises counter
+            totalExercises++;
             
             const card = document.createElement("div");
             card.classList.add("exercise-card");
 
-            let isCompleted = completedExercisesData[exercise.exercise];
-            
-            // Count completed exercises
-            if (isCompleted) {
-                completedExercises++;
-                card.classList.add("completed"); // Add visual class
+            let details = `<h4>${exercise.exercise}</h4>
+                <p><strong>Category:</strong> ${exercise.type}</p>`;
+
+            if (exercise.type === "reps") {
+                details += `<p><strong>Reps:</strong> ${exercise.reps}</p>`;
+            } else if (exercise.type === "hold") {
+                details += `<p><strong>Hold Time:</strong> ${exercise.hold} seconds</p>`;
+            } else if (exercise.type === "time") {
+                details += `<p><strong>Duration:</strong> ${exercise.time} seconds</p>`;
             }
-
-            card.innerHTML = `
-                <h4>${exercise.exercise}</h4>
-                <p>Type: ${exercise.type}</p>
-                <p>Sets: ${exercise.sets || 1}</p>
-                <p>Rest: ${exercise.rest || 30}s</p>
-                <button class="start-btn" ${isCompleted ? 'disabled' : ''}>
-                    ${isCompleted ? '✔ Completed' : 'Start'}
-                </button>
-            `;
-
-            const startButton = card.querySelector(".start-btn");
-            if (!isCompleted) {
+            details += `<p><strong>Rest Time:</strong> ${exercise.rest} seconds</p>`;
+            
+            const startButton = document.createElement("button");
+            
+            // Check if already completed
+            const exerciseId = `${type}_${exercise.exercise}`.replace(/\s+/g, '_').toLowerCase();
+            if (completedExercisesList[exerciseId]) {
+                startButton.textContent = "Completed";
+                startButton.disabled = true;
+                card.classList.add("completed");
+                completedExercises++;
+            } else {
+                startButton.textContent = "Start";
                 startButton.addEventListener("click", () => startExercise(exercise, card));
             }
-
-            container.appendChild(card);
+            
+            startButton.classList.add("start-btn");
+            card.innerHTML = details;
+            card.appendChild(startButton);
+            section.appendChild(card);
         });
+        container.appendChild(section);
     });
-
+    
+    // Update progress bar
     updateProgressBar();
-    addProgressSummary(); 
 };
-
 
 const updateProgressBar = () => {
     const progressBar = document.getElementById("progress-bar");
@@ -135,68 +192,40 @@ const updateProgressBar = () => {
     
     const progressPercentage = totalExercises > 0 ? Math.round((completedExercises / totalExercises) * 100) : 0;
     
-    // Animate the progress bar
     progressBar.style.width = `${progressPercentage}%`;
-    progressText.textContent = `Progress: ${completedExercises} of ${totalExercises} (${progressPercentage}%)`;
-    
-    // Add visual feedback based on progress
-    if (progressPercentage === 100) {
-        progressBar.style.backgroundColor = "#4CAF50"; // Green for complete
-        progressText.textContent = `Completed! All ${totalExercises} exercises done.`;
-    } else if (progressPercentage >= 75) {
-        progressBar.style.backgroundColor = "#8BC34A"; // Light green for almost complete
-    } else if (progressPercentage >= 50) {
-        progressBar.style.backgroundColor = "#FFC107"; // Amber for halfway
-    } else if (progressPercentage >= 25) {
-        progressBar.style.backgroundColor = "#FF9800"; // Orange for started
-    } else {
-        progressBar.style.backgroundColor = "#F44336"; // Red for just beginning
-    }
+    progressText.textContent = `Progress: ${progressPercentage}%`;
 };
-// Fix the markExerciseCompleted function to accept exercise name parameter
-const markExerciseCompleted = async (exerciseName) => {
+
+
+// Function to mark exercise as completed
+const markExerciseCompleted = (exercise) => {
+    const userId = auth.currentUser.uid;
+    const today = new Date().toISOString().split('T')[0];
+    const exerciseId = `${exercise.category}_${exercise.exercise}`.replace(/\s+/g, '_').toLowerCase();
+    
+    completedExercisesList[exerciseId] = true;
     completedExercises++;
     updateProgressBar();
-
-    if (userId) {
-        await update(ref(dbRealtime, `users/${userId}/completedExercises/${exerciseName}`), {
-            completed: true,
-            timestamp: Date.now()
-        });
-    }
-
-    // Hide completed exercises dynamically
-    document.querySelectorAll('.exercise-card').forEach(card => {
-        if (card.querySelector('h4').textContent === exerciseName) {
-            card.classList.add('completed');
-            card.querySelector('button').textContent = "Completed";
-            card.querySelector('button').disabled = true;
-        }
-    });
-};
-
-// Fix port number in the fetch calls
-// In exercises.js, modify the startExercise function:
-const startExercise = (exercise, card) => {
-    card.querySelector("button").disabled = true;
-    card.querySelector("button").textContent = "Starting...";
     
-    // First start the camera
-    fetch(`http://localhost:5001/start-camera`, { 
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log("Camera started:", data);
-        
-        // Now start the specific exercise
-        return fetch(`http://localhost:5001/start-exercise`, { 
+    // Save to database
+    const completedRef = ref(dbRealtime, `users/${userId}/completedExercises/${today}/${exerciseId}`);
+    set(completedRef, true);
+    
+    // Update daily progress
+    updateDailyProgress(userId, today);
+    
+    // Important: Update the UI to reflect completion across all exercises
+    updateCompletedExercisesUI();
+};
+const startExercise = async (exercise, card) => {
+    const startBtn = card.querySelector("button");
+    startBtn.disabled = true;
+    startBtn.textContent = "In Progress";
+    card.classList.add("in-progress");
+    
+    try {
+        // Start exercise tracking
+        const response = await fetch("http://localhost:5001/start-exercise", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -205,111 +234,172 @@ const startExercise = (exercise, card) => {
                 details: exercise 
             })
         });
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(() => {
+        
+        const data = await response.json();
+        console.log(`${exercise.exercise} tracking started:`, data);
+        
+        // For reps exercises
         if (exercise.type === "reps") {
-            // For rep-based exercises, check completion status
-            checkCompletion(exercise, card);
-        } else {
-            // For time-based exercises, start the timer
-            let duration = exercise.type === "hold" ? exercise.hold : exercise.time;
+            // Show timer for estimated duration
+            const estimatedTime = exercise.reps * 3; // 3 seconds per rep
+            let countdown = estimatedTime;
+            
+            const timer = setInterval(() => {
+                // Keep "In Progress" text
+                countdown--;
+                
+                if (countdown < 0) {
+                    clearInterval(timer);
+                    // Stop tracking and mark as completed
+                    fetch("http://localhost:5001/stop-tracking", {
+                        method: "POST"
+                    }).then(() => {
+                        // Mark exercise as completed both in UI and database
+                        markExerciseCompleted(exercise);
+                        card.classList.add("completed");
+                        card.classList.remove("in-progress");
+                        startBtn.textContent = "Completed";
+                        startBtn.disabled = true;
+                    });
+                }
+            }, 1000);
+        } 
+        // For time-based or hold exercises
+        else {
+            const duration = exercise.type === "hold" ? exercise.hold : exercise.time;
             let countdown = duration;
-            const interval = setInterval(() => {
-                card.querySelector("button").textContent = `Time left: ${countdown}s`;
-                if (--countdown < 0) {
-                    clearInterval(interval);
-                    showRestPeriod(exercise, card);
+            
+            const timer = setInterval(() => {
+                // Keep "In Progress" text
+                countdown--;
+                
+                if (countdown < 0) {
+                    clearInterval(timer);
+                    // Stop tracking and show rest period
+                    fetch("http://localhost:5001/stop-tracking", {
+                        method: "POST"
+                    }).then(() => {
+                        showRestPeriod(exercise, card);
+                    });
                 }
             }, 1000);
         }
-    })
-    .catch(error => {
-        console.error("Error in exercise start sequence:", error);
-        card.querySelector("button").textContent = "Error - Try again";
-        card.querySelector("button").disabled = false;
-    });
+    } catch (error) {
+        console.error("Error starting exercise:", error);
+        startBtn.disabled = false;
+        startBtn.textContent = "Start";
+        card.classList.remove("in-progress");
+    }
 };
 
 const showRestPeriod = (exercise, card) => {
     let countdown = exercise.rest;
+    const startBtn = card.querySelector("button");
+    startBtn.textContent = "Resting";
+    
     const interval = setInterval(() => {
-        card.querySelector("button").textContent = `Rest: ${countdown}s`;
         if (--countdown < 0) {
             clearInterval(interval);
-            card.querySelector("button").textContent = "Completed";
-            card.querySelector("button").disabled = true;
-            markExerciseCompleted(exercise.exercise);
-            
-            // Stop tracking/camera when exercise is complete
-            fetch(`http://localhost:5001/stop-tracking`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" }
-            }).catch(err => {
-                console.error("Error stopping tracking:", err);
-            });
+            // Mark exercise as completed both in UI and database
+            markExerciseCompleted(exercise);
+            startBtn.textContent = "Completed";
+            startBtn.disabled = true;
+            card.classList.add("completed");
+            card.classList.remove("in-progress");
         }
     }, 1000);
 };
 
+
 const checkCompletion = (exercise, card) => {
     const checkInterval = setInterval(() => {
-        fetch(`http://localhost:5001/complete-exercise`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ exercise: exercise.exercise })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === "success") {
-                clearInterval(checkInterval);
-                card.querySelector("button").textContent = "Completed";
-                card.querySelector("button").disabled = true;
-                markExerciseCompleted(exercise.exercise);
-                
-                // Stop tracking/camera when exercise is complete
-                fetch(`http://localhost:5001/stop-tracking`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" }
-                }).catch(err => {
-                    console.error("Error stopping tracking:", err);
-                });
-            }
-        })
-        .catch(err => {
-            console.error("Error checking completion:", err);
-        });
+        fetch(`http://localhost:5000/track/get-${exercise.exercise.toLowerCase()}-count`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.count >= exercise.reps) {
+                    card.querySelector("button").textContent = "Completed";
+                    card.querySelector("button").disabled = true;
+                    markExerciseCompleted(exercise); 
+                    clearInterval(checkInterval); 
+                }
+            });
     }, 3000);
 };
-
-const addProgressSummary = () => {
-    let summaryElement = document.getElementById("exercise-summary");
-    
-    if (!summaryElement) {
-        summaryElement = document.createElement("div");
-        summaryElement.id = "exercise-summary";
-        summaryElement.className = "exercise-summary";
-        
-        const container = document.getElementById("exercise-container");
-        container.parentNode.insertBefore(summaryElement, container);
-    }
-    
+const isExerciseCompleted = (exercise) => {
+    const exerciseId = `${exercise.category}_${exercise.exercise}`.replace(/\s+/g, '_').toLowerCase();
+    return completedExercisesList[exerciseId] === true;
+};
+// Update daily progress percentage
+const updateDailyProgress = async (userId, date) => {
     const progressPercentage = totalExercises > 0 ? Math.round((completedExercises / totalExercises) * 100) : 0;
+    const progressRef = ref(dbRealtime, `users/${userId}/dailyProgress/${date}`);
+    await set(progressRef, progressPercentage);
     
-    summaryElement.innerHTML = `
-        <h3>Your Progress</h3>
-        <div class="progress-bar-container">
-            <div id="progress-bar" class="progress-bar" style="width: ${progressPercentage}%"></div>
-        </div>
-        <p id="progress-text">Progress: ${completedExercises} of ${totalExercises} (${progressPercentage}%)</p>
-        <p>${progressPercentage === 100 ? 
-            'Great job! You completed all exercises.' : 
-            `You have ${totalExercises - completedExercises} exercises remaining.`}
-        </p>
-    `;
+    // Check if stage progression criteria are met
+    checkStageProgression(userId);
+};
+const checkStageProgression = async (userId) => {
+    try {
+        // Get current stage and fitness level
+        const userRef = ref(dbRealtime, `users/${userId}`);
+        const snapshot = await get(userRef);
+        
+        if (!snapshot.exists()) return;
+        
+        const userData = snapshot.val();
+        const currentFitnessLevel = userData.fitnessLevel || "beginner";
+        const currentStage = userData.stage || 1;
+        
+        // Get daily progress for the past 7 days
+        const today = new Date();
+        const dailyProgressRef = ref(dbRealtime, `users/${userId}/dailyProgress`);
+        const progressSnapshot = await get(dailyProgressRef);
+        
+        if (!progressSnapshot.exists()) return;
+        
+        const progressData = progressSnapshot.val();
+        
+        // Count days with >90% progress in the last 7 days
+        let highProgressDays = 0;
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            
+            if (progressData[dateStr] && progressData[dateStr] >= 90) {
+                highProgressDays++;
+            }
+        }
+        
+        // Check if criteria for progression is met (4+ days with >90%)
+        if (highProgressDays >= 4) {
+            // Determine next stage
+            if (currentStage === 3) {
+                // Move to next fitness level
+                let nextFitnessLevel;
+                if (currentFitnessLevel === "beginner") {
+                    nextFitnessLevel = "intermediate";
+                } else if (currentFitnessLevel === "intermediate") {
+                    nextFitnessLevel = "advanced";
+                } else {
+                    // Already at advanced level
+                    return;
+                }
+                
+                // Update fitness level and reset stage to 1
+                await set(ref(dbRealtime, `users/${userId}/fitnessLevel`), nextFitnessLevel);
+                await set(ref(dbRealtime, `users/${userId}/stage`), 1);
+                
+                alert(`Congratulations! You've advanced to ${nextFitnessLevel} level!`);
+            } else {
+                // Move to next stage within current fitness level
+                const nextStage = currentStage + 1;
+                await set(ref(dbRealtime, `users/${userId}/stage`), nextStage);
+                
+                alert(`Congratulations! You've advanced to stage ${nextStage}!`);
+            }
+        }
+    } catch (error) {
+        console.error("Error checking stage progression:", error);
+    }
 };
