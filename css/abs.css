@@ -1,6 +1,6 @@
 :root {
-    --primary-color: #3498db;
-    --secondary-color: #27ae60;
+    --primary-color: #4D55CC;
+    --secondary-color: #0077be;
     --background-color: #f0f4f8;
     --text-color: #2c3e50;
     --light-accent: #bdc3c7;
@@ -15,8 +15,8 @@
 }
 
 body {
-    background-color: var(--background-color);
-    color: var(--text-color);
+    background-color: #ADB2D4;
+    color: #4D55CC;
     line-height: 1.6;
 }
 
@@ -27,7 +27,7 @@ body {
 
 .sidebar {
     width: 280px;
-    background-color: var(--card-bg);
+    background-color: #ADB2D4;
     color: var(--text-color);
     padding: 20px;
     position: fixed;
@@ -86,7 +86,7 @@ body {
 
 h1 {
     font-size: 36px;
-    color: var(--primary-color);
+    color: var(--rimary-color);
     font-weight: 600;
 }
 
@@ -97,7 +97,7 @@ h1 {
 }
 
 #workoutContent {
-    background-color: var(--card-bg);
+    background-color: #ffffff;
     border-radius: 12px;
     padding: 30px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
