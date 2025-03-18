@@ -1,0 +1,185 @@
+/* level.css */
+
+/* Level card styles */
+.stat-card .level-progress {
+    width: 100%;
+    height: 10px;
+    background-color: #ddd;
+    border-radius: 5px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.stat-card .level-progress-bar {
+    height: 100%;
+    background-color: #4CAF50;
+    transition: width 0.5s ease-in-out;
+}
+
+.stat-card .points-info {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* Level icon styles */
+.level-icon {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+}
+
+.level-badge {
+    width: 50px;
+    height: 50px;
+    background-color: #4CAF50;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+
+.level-badge:hover {
+    transform: scale(1.1);
+}
+
+.level-number {
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.level-tooltip {
+    position: absolute;
+    bottom: -30px;
+    right: 0;
+    background-color: #333;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* Different level colors */
+[data-level="1"] .level-badge {
+    background-color: #4CAF50; /* Green */
+}
+
+[data-level="2"] .level-badge {
+    background-color: #2196F3; /* Blue */
+}
+
+[data-level="3"] .level-badge {
+    background-color: #9C27B0; /* Purple */
+}
+
+[data-level="4"] .level-badge {
+    background-color: #FF9800; /* Orange */
+}
+
+[data-level="5"] .level-badge {
+    background-color: #F44336; /* Red */
+}
+
+[data-level="6"] .level-badge,
+[data-level="7"] .level-badge,
+[data-level="8"] .level-badge,
+[data-level="9"] .level-badge,
+[data-level="10"] .level-badge {
+    background-color: #FFD700; /* Gold */
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+}
+/* Level icon styles - positioned on far right */
+.level-icon {
+    position: absolute;
+    top: 20px;
+    right: 20px; /* Keep on the right edge */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.level-badge {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #1e90ff, #0073e6); /* Blue gradient */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.level-badge::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transform: rotate(45deg);
+    animation: shine 2s infinite;
+}
+
+.level-badge:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.level-number {
+    color: white;
+    font-weight: bold;
+    font-size: 24px;
+    font-family: 'Bebas Neue', sans-serif;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    z-index: 2;
+}
+
+.level-tooltip {
+    position: absolute;
+    top: 60px;
+    right: 0;
+    background-color: #333;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 101;
+}
+
+.level-icon:hover .level-tooltip {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@keyframes shine {
+    0% {
+        left: -100%;
+    }
+    20% {
+        left: 100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+.camera-btn {
+    right: 100px;
+}

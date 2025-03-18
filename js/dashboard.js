@@ -4,6 +4,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/fireba
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getDatabase, ref, onValue, get, set, update } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { initializeLevelDisplay } from './leveldisplay.js';
 
 console.log("Imports completed");
 
@@ -40,6 +41,8 @@ document.addEventListener('DOMContentLoaded', function() {
             initializeWaterIntakeTracker();
             initializeWelcomeMessage();
             fetchUserFitnessLevel(user.uid);
+            initializeLevelDisplay(user.uid);
+
         } else {
             console.log("No user is authenticated");
             window.location.href = 'home.html'; // Redirect to login page

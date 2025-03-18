@@ -114,7 +114,7 @@ input[type="password"]::placeholder {
 }
 
 button {
-    background-color: var(--primary-color);
+    background-color: #0077be;
     color: var(--white);
     border: none;
     padding: 0.8rem;
