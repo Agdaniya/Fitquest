@@ -1,8 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, get , set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAOgdbddMw93MExNBz3tceZ8_NrNAl5q40",
@@ -19,7 +18,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const dbRealtime = getDatabase(app);
 const dbFirestore = getFirestore(app);
-let userId = null;
+
 // Store workout state
 let currentWorkout = {
     exercises: [],
@@ -42,27 +41,6 @@ const getFitnessLevel = async (userId) => {
         return "beginner";
     }
 };
-
-const getExercises = async (userId) => {
-    const fitnessLevel = await getFitnessLevel(userId);
-    const exercisesRef = doc(dbFirestore, "exercises", fitnessLevel);
-
-    try {
-        const docSnap = await getDoc(exercisesRef);
-        if (docSnap.exists()) {
-            const exercises = docSnap.data();
-            console.log("Retrieved exercises for fitness level:", fitnessLevel, exercises);
-            return exercises;
-        } else {
-            console.log("No exercises found for fitness level:", fitnessLevel);
-            return {};
-        }
-    } catch (error) {
-        console.error("Error fetching exercises:", error);
-        return {};
-    }
-};
-
 // Create a flattened list of exercises from the categorized format
 const flattenExercises = (exercisesData) => {
     const flatList = [];
@@ -126,11 +104,8 @@ document.getElementById("start-plan").addEventListener("click", async () => {
     const user = auth.currentUser;
     if (!user) {
         console.log("No user signed in.");
-        alert("Please log in to start a workout plan.");
         return;
     }
-    
-    userId = user.uid; // Store the user ID
 
     try {
         // If workout is already in progress, stop it
@@ -158,31 +133,41 @@ const startWorkoutSession = async (exercisesData) => {
     // Flatten exercise data for sequential processing
     const flattenedExercises = flattenExercises(exercisesData);
     
-    if (flattenedExercises.length === 0) {
-        alert("No exercises available to start.");
-        return;
+    // Filter out completed exercises
+    const today = new Date().toISOString().split('T')[0];
+    const userId = auth.currentUser.uid;
+    const completedRef = ref(dbRealtime, `users/${userId}/completedExercises/${today}`);
+    
+    try {
+        const snapshot = await get(completedRef);
+        if (snapshot.exists()) {
+            const completedExercises = snapshot.val();
+            
+            // Filter exercises
+            const filteredExercises = flattenedExercises.filter(exercise => {
+                const exerciseId = `${exercise.category}_${exercise.exercise}`.replace(/\s+/g, '_').toLowerCase();
+                return !completedExercises[exerciseId];
+            });
+            
+            // Update flattened exercises list
+            currentWorkout.flattenedExercises = filteredExercises;
+        } else {
+            currentWorkout.flattenedExercises = flattenedExercises;
+        }
+    } catch (error) {
+        console.error("Error loading completed exercises:", error);
+        currentWorkout.flattenedExercises = flattenedExercises;
     }
     
-    // Load completed exercises to filter out already completed ones
-    const completedExercisesData = await loadCompletedExercises(userId);
-    
-    // Filter out completed exercises
-    const availableExercises = flattenedExercises.filter(exercise => 
-        !completedExercisesData || !completedExercisesData[exercise.exercise]
-    );
-    
-    if (availableExercises.length === 0) {
-        alert("All exercises are completed for today!");
+    if (currentWorkout.flattenedExercises.length === 0) {
+        alert("All exercises for today are completed! Great job!");
         return;
     }
     
     // Initialize workout state
-    currentWorkout = {
-        exercises: exercisesData,
-        flattenedExercises: availableExercises,
-        currentExerciseIndex: -1,
-        inProgress: true
-    };
+    currentWorkout.exercises = exercisesData;
+    currentWorkout.currentExerciseIndex = -1;
+    currentWorkout.inProgress = true;
     
     // Set up UI
     createProgressDisplay();
@@ -213,22 +198,6 @@ const startWorkoutSession = async (exercisesData) => {
     }
 };
 
-const loadCompletedExercises = async (userId) => {
-    if (!userId) return {};
-    
-    const completedRef = ref(dbRealtime, `users/${userId}/completedExercises`);
-    try {
-        const snapshot = await get(completedRef);
-        if (snapshot.exists()) {
-            return snapshot.val(); // Returns an object of completed exercises
-        }
-    } catch (error) {
-        console.error("Error fetching completed exercises:", error);
-    }
-    return {};
-};
-
-// This is the key function that needs fixing
 const moveToNextExercise = async () => {
     // Move to next exercise
     currentWorkout.currentExerciseIndex++;
@@ -263,8 +232,14 @@ const moveToNextExercise = async () => {
         const data = await response.json();
         console.log(`${exercise.exercise} tracking started:`, data);
         
-        // Set up continuous checking for exercise completion
-        startExerciseCompletionCheck(exercise);
+        // Automatically move to next exercise after estimated completion time
+        // This is a basic approach - ideally the Python script would signal completion
+        const completionTime = calculateExerciseTime(exercise);
+        setTimeout(() => {
+            markExerciseCompleted();
+            markExerciseCompletedInDatabase(exercise); // Add this line
+            moveToNextExercise();
+        }, completionTime * 1000);
         
     } catch (err) {
         console.error(`Error tracking ${exercise.exercise}:`, err);
@@ -273,52 +248,6 @@ const moveToNextExercise = async () => {
             moveToNextExercise();
         }, 3000);
     }
-};
-
-// New function to periodically check if an exercise is complete
-const startExerciseCompletionCheck = (exercise) => {
-    const completionTime = calculateExerciseTime(exercise);
-    let elapsedTime = 0;
-    const checkInterval = 1000; // Check every second
-    
-    const timer = setInterval(() => {
-        elapsedTime += checkInterval / 1000;
-        
-        // Update time remaining in UI
-        const remainingTime = Math.max(0, completionTime - elapsedTime);
-        updateExerciseTimeUI(exercise, remainingTime);
-        
-        // If time is up, consider exercise complete
-        if (elapsedTime >= completionTime) {
-            clearInterval(timer);
-            console.log(`Exercise ${exercise.exercise} completed based on time.`);
-            
-            // Mark as complete and move to next exercise
-            markExerciseCompleted(exercise)
-                .then(() => moveToNextExercise())
-                .catch(err => {
-                    console.error(`Error completing ${exercise.exercise}:`, err);
-                    moveToNextExercise(); // Move to next exercise even if there's an error
-                });
-        }
-    }, checkInterval);
-    
-    // Store the timer ID in the exercise object to clear it if needed
-    exercise.completionTimer = timer;
-};
-
-// New function to update time remaining in UI
-const updateExerciseTimeUI = (exercise, remainingTime) => {
-    const timeElement = document.getElementById("exercise-time-remaining");
-    if (!timeElement) {
-        const timeDisplay = document.createElement("p");
-        timeDisplay.id = "exercise-time-remaining";
-        timeDisplay.className = "time-display";
-        document.getElementById("current-exercise-details").appendChild(timeDisplay);
-    }
-    
-    document.getElementById("exercise-time-remaining").textContent = 
-        `Time remaining: ${Math.round(remainingTime)}s`;
 };
 
 const calculateExerciseTime = (exercise) => {
@@ -345,51 +274,9 @@ const calculateExerciseTime = (exercise) => {
     return totalTime + 10;
 };
 
-const markExerciseCompleted = async (exercise) => {
-    if (!exercise) {
-        console.error("No exercise provided to markExerciseCompleted");
-        return;
-    }
-    
-    // Clear any ongoing timers for this exercise
-    if (exercise.completionTimer) {
-        clearInterval(exercise.completionTimer);
-    }
-    
+const markExerciseCompleted = () => {
     completedExercises++;
     updateProgressDisplay();
-
-    if (userId) {
-        // Save to Firebase that this exercise is completed
-        await update(ref(dbRealtime, `users/${userId}/completedExercises/${exercise.exercise}`), {
-            completed: true,
-            timestamp: Date.now()
-        });
-    }
-
-    // Also update the backend to ensure it knows the exercise is complete
-    try {
-        await fetch("http://localhost:5001/complete-exercise", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ exercise: exercise.exercise })
-        });
-    } catch (err) {
-        console.error("Error marking exercise as complete on backend:", err);
-    }
-
-    // Update UI to reflect completion status
-    document.querySelectorAll(".exercise-card").forEach(card => {
-        if (card.querySelector("h4")?.textContent === exercise.exercise) {
-            const btn = card.querySelector("button");
-            if (btn) {
-                btn.textContent = "✔ Completed";
-                btn.disabled = true;
-            }
-        }
-    });
-
-    console.log(`Exercise ${exercise.exercise} marked as completed`);
 };
 
 const updateExerciseUI = (exercise) => {
@@ -447,15 +334,6 @@ const stopWorkout = async () => {
 };
 
 const resetWorkout = () => {
-    // Clear any ongoing timers
-    if (currentWorkout.flattenedExercises) {
-        currentWorkout.flattenedExercises.forEach(exercise => {
-            if (exercise.completionTimer) {
-                clearInterval(exercise.completionTimer);
-            }
-        });
-    }
-    
     // Reset workout state
     currentWorkout = {
         exercises: [],
@@ -481,11 +359,6 @@ const resetWorkout = () => {
     if (progressContainer) {
         progressContainer.remove();
     }
-    
-    const timeRemaining = document.getElementById("exercise-time-remaining");
-    if (timeRemaining) {
-        timeRemaining.remove();
-    }
 };
 
 // Initialize on page load
@@ -493,3 +366,163 @@ window.addEventListener("load", () => {
     // Check for existing workout on page reload
     resetWorkout();
 });
+
+// Add to getExercises in startplan.js or exercises.js
+
+const getExercises = async (userId) => {
+    const fitnessLevel = await getFitnessLevel(userId);
+    
+    // Get user stage
+    const stageRef = ref(dbRealtime, `users/${userId}/stage`);
+    const stageSnapshot = await get(stageRef);
+    const stage = stageSnapshot.exists() ? stageSnapshot.val() : 1;
+    
+    const exercisesRef = doc(dbFirestore, "exercises", fitnessLevel);
+
+    try {
+        const docSnap = await getDoc(exercisesRef);
+        if (docSnap.exists()) {
+            const exercises = docSnap.data();
+            
+            // Adjust exercise durations based on stage
+            Object.keys(exercises).forEach(category => {
+                exercises[category].forEach(exercise => {
+                    // Adjust times based on stage (add 5 seconds per stage)
+                    const stageMultiplier = (stage - 1) * 5;
+                    
+                    if (exercise.type === "time") {
+                        exercise.time += stageMultiplier;
+                    } else if (exercise.type === "hold") {
+                        exercise.hold += stageMultiplier;
+                    } else if (exercise.type === "reps") {
+                        // Add 1 rep per stage
+                        exercise.reps += (stage - 1);
+                    }
+                });
+            });
+            
+            console.log(`Retrieved exercises for fitness level: ${fitnessLevel}, stage: ${stage}`, exercises);
+            return exercises;
+        } else {
+            console.log("No exercises found for fitness level:", fitnessLevel);
+            return {};
+        }
+    } catch (error) {
+        console.error("Error fetching exercises:", error);
+        return {};
+    }
+};
+const markExerciseCompletedInDatabase = (exercise) => {
+    const userId = auth.currentUser.uid;
+    const today = new Date().toISOString().split('T')[0];
+    const exerciseId = `${exercise.category}_${exercise.exercise}`.replace(/\s+/g, '_').toLowerCase();
+    
+    // Save to database
+    const completedRef = ref(dbRealtime, `users/${userId}/completedExercises/${today}/${exerciseId}`);
+    set(completedRef, true);
+    
+    // Update daily progress
+    updateDailyProgress(userId, today);
+};
+
+// Add this function to startplan.js (copied from exercises.js)
+const updateDailyProgress = async (userId, date) => {
+    // Need to calculate total available exercises 
+    const fitnessLevel = await getFitnessLevel(userId);
+    const exercisesRef = doc(dbFirestore, "exercises", fitnessLevel);
+    
+    try {
+        const docSnap = await getDoc(exercisesRef);
+        if (docSnap.exists()) {
+            const exercises = docSnap.data();
+            let totalAvailableExercises = 0;
+            
+            // Count total exercises
+            Object.keys(exercises).forEach(category => {
+                totalAvailableExercises += exercises[category].length;
+            });
+            
+            // Get current completed count
+            const completedRef = ref(dbRealtime, `users/${userId}/completedExercises/${date}`);
+            const completedSnap = await get(completedRef);
+            const completedCount = completedSnap.exists() ? Object.keys(completedSnap.val()).length : 0;
+            
+            // Calculate and save progress percentage
+            const progressPercentage = totalAvailableExercises > 0 ? 
+                Math.round((completedCount / totalAvailableExercises) * 100) : 0;
+            
+            const progressRef = ref(dbRealtime, `users/${userId}/dailyProgress/${date}`);
+            await set(progressRef, progressPercentage);
+            
+            // Check if stage progression criteria are met
+            checkStageProgression(userId);
+        }
+    } catch (error) {
+        console.error("Error updating daily progress:", error);
+    }
+};
+const checkStageProgression = async (userId) => {
+    try {
+        // Get current stage and fitness level
+        const userRef = ref(dbRealtime, `users/${userId}`);
+        const snapshot = await get(userRef);
+        
+        if (!snapshot.exists()) return;
+        
+        const userData = snapshot.val();
+        const currentFitnessLevel = userData.fitnessLevel || "beginner";
+        const currentStage = userData.stage || 1;
+        
+        // Get daily progress for the past 7 days
+        const today = new Date();
+        const dailyProgressRef = ref(dbRealtime, `users/${userId}/dailyProgress`);
+        const progressSnapshot = await get(dailyProgressRef);
+        
+        if (!progressSnapshot.exists()) return;
+        
+        const progressData = progressSnapshot.val();
+        
+        // Count days with >90% progress in the last 7 days
+        let highProgressDays = 0;
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            
+            if (progressData[dateStr] && progressData[dateStr] >= 90) {
+                highProgressDays++;
+            }
+        }
+        
+        // Check if criteria for progression is met (4+ days with >90%)
+        if (highProgressDays >= 4) {
+            // Determine next stage
+            if (currentStage === 3) {
+                // Move to next fitness level
+                let nextFitnessLevel;
+                if (currentFitnessLevel === "beginner") {
+                    nextFitnessLevel = "intermediate";
+                } else if (currentFitnessLevel === "intermediate") {
+                    nextFitnessLevel = "advanced";
+                } else {
+                    // Already at advanced level
+                    return;
+                }
+                
+                // Update fitness level and reset stage to 1
+                await set(ref(dbRealtime, `users/${userId}/fitnessLevel`), nextFitnessLevel);
+                await set(ref(dbRealtime, `users/${userId}/stage`), 1);
+                
+                alert(`Congratulations! You've advanced to ${nextFitnessLevel} level!`);
+            } else {
+                // Move to next stage within current fitness level
+                const nextStage = currentStage + 1;
+                await set(ref(dbRealtime, `users/${userId}/stage`), nextStage);
+                
+                alert(`Congratulations! You've advanced to stage ${nextStage}!`);
+            }
+        }
+    } catch (error) {
+        console.error("Error checking stage progression:", error);
+    }
+};

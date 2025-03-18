@@ -348,6 +348,54 @@ body {
     align-items:end;
 }
 
+.progress-graph {
+    margin: 20px 0;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.progress-graph h2 {
+    margin-bottom: 15px;
+    color: #333;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.graph-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 15px;
+}
+
+.graph-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #666;
+    margin-top: 10px;
+}
+
+#weekly-average {
+    font-weight: bold;
+    color: #4682B4;
+}
+
+@media (max-width: 768px) {
+    .graph-container {
+        height: 250px;
+    }
+    
+    .graph-info {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    #weekly-average {
+        margin-top: 5px;
+    }
+}
+
 @keyframes slideIn {
     to {
         opacity: 1;

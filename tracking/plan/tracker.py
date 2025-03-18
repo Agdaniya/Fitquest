@@ -35,7 +35,6 @@ def open_camera():
             mp_drawing.draw_landmarks(
                 frame, 
                 results.pose_landmarks, 
-                
                 mp_pose.POSE_CONNECTIONS,
                 mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
                 mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2)
@@ -226,20 +225,6 @@ def start_tracking(exercise_name, exercise_type, exercise_details):
     cv2.destroyAllWindows()
     print(f"Finished tracking {exercise_name}")
 
-# Add this function to tracker.py at the end of the file, before the if __name__ block
-def complete_exercise():
-    """Marks the current exercise as complete."""
-    from flask import jsonify
-    try:
-        # You should also add logic here to update any relevant data about the completed exercise
-        # For example, storing completion data to a database
-        print("Exercise completed!")
-        
-        return jsonify({"status": "success", "message": "Exercise marked as complete"}), 200
-    except Exception as e:
-        print(f"Error completing exercise: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
-    
 if __name__ == "__main__":
     print("Arguments received:", sys.argv)  # Debugging
 
