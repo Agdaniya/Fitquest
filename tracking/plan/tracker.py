@@ -3,6 +3,7 @@ import json
 import cv2
 import mediapipe as mp
 import time
+import math
 from datetime import datetime
 
 # Initialize MediaPipe Pose
@@ -52,6 +53,17 @@ def open_camera():
     cv2.destroyAllWindows()
     print("Camera test ended.")
 
+def calculate_angle(a, b, c):
+    """Calculates the angle between three points: a, b, and c (in 2D)."""
+    a = [a.x, a.y]
+    b = [b.x, b.y]
+    c = [c.x, c.y]
+    radians = math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0])
+    angle = abs(radians * 180.0 / math.pi)
+    if angle > 180.0:
+        angle = 360.0 - angle
+    return angle
+
 def count_reps(landmarks, exercise_type):
     """
     Basic implementation of rep counting based on specific joint movements.
@@ -59,14 +71,34 @@ def count_reps(landmarks, exercise_type):
     """
     # Example for squat: track hip movement up and down
     if exercise_type.lower() == "squat":
-        # Get hip landmark (e.g., hip point)
-        hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
-        return hip.y  # Return y-position for threshold checking
+       # Get hip, knee, and ankle landmarks
+        left_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
+        left_knee = landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value]
+        left_ankle = landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value]
+        right_hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value] 
+        right_knee = landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value]
+        right_ankle = landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value]
+        
+        # Calculate knee angles
+        left_knee_angle = calculate_angle(left_hip, left_knee, left_ankle)
+        right_knee_angle = calculate_angle(right_hip, right_knee, right_ankle)
+        
+        # Return average of both knee angles
+        return (left_knee_angle + right_knee_angle) / 2
     
     # Example for push-up: track shoulder movement
-    elif exercise_type.lower() in ["pushup", "push-up", "push up"]:
-        shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value]
-        return shoulder.y
+     elif exercise_type.lower() in ["legraises", "leg raises", "leg raise"]:
+        left_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
+        right_hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]
+        left_ankle = landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value]
+        right_ankle = landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value]
+        
+        # Calculate vertical distance between ankles and hips
+        left_leg_diff = left_hip.y - left_ankle.y
+        right_leg_diff = right_hip.y - right_ankle.y
+        
+        # Return the max difference (whichever leg is most raised)
+        return max(left_leg_diff, right_leg_diff)
     
     # Default case: track movement of wrist for generic exercises
     else:
