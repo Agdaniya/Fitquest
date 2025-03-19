@@ -42,14 +42,12 @@ document.addEventListener('DOMContentLoaded', function() {
             initializeWelcomeMessage();
             fetchUserFitnessLevel(user.uid);
             initializeLevelDisplay(user.uid);
-
+            fetchAndCalculateCompletedExerciseCalories(user.uid); // Added function call here
         } else {
             console.log("No user is authenticated");
             window.location.href = 'home.html'; // Redirect to login page
         }
     });
-
-    //initializeCardFlipListeners();
 });
 
 function fetchTotalCaloriesBurned(userId) {
@@ -173,10 +171,10 @@ function updateLoginStreakDisplay(streak) {
         streakDisplay.textContent = streak;
     }
 }
+
 const todaysGoal = document.getElementById('todaysGoals');
 function initializeWelcomeMessage() {
     const welcomeMessage = document.getElementById('welcomeMessage');
-    
     
     const currentHour = new Date().getHours();
     let greeting;
@@ -193,6 +191,7 @@ function initializeWelcomeMessage() {
         welcomeMessage.textContent = `${greeting}!`;
     }
 }
+
 if (todaysGoal) {
     const storedGoal = localStorage.getItem('todaysGoal');
     console.log('Retrieved todaysGoal from localStorage:', storedGoal);
@@ -285,60 +284,44 @@ function showNotification(message) {
     }
 }
 
-        /*function initializeCardFlipListeners() {
-            const cards = document.querySelectorAll('.stat-card');
-            cards.forEach(card => {
-                card.addEventListener('click', () => {
-                    const cardInner = card.querySelector('.card-inner');
-                    if (cardInner) {
-                        cardInner.style.transform = 
-                            cardInner.style.transform === 'rotateY(180deg)' 
-                                ? 'rotateY(0deg)' 
-                                : 'rotateY(180deg)';
-                    }
-                });
-            });
-        }*/
-            
-            async function fetchUserFitnessLevel(userId) {
-                try {
-                    const userRef = ref(database, `users/${userId}`);
-                    const snapshot = await get(userRef);
-                    
-                    if (snapshot.exists()) {
-                        const userData = snapshot.val();
-                        let fitnessLevel = userData.fitnessLevel; // Check if fitness level is set
-                        let userStage = userData.stage; // Check if stage is set
-            
-                        // If no fitness level exists, set it to "beginner" and store in Firebase
-                        if (!fitnessLevel) {
-                            fitnessLevel = "beginner";
-                            await update(userRef, { fitnessLevel }); // Save fitness level
-                        }
-            
-                        // If no stage exists, initialize based on fitness level
-                        if (!userStage) {
-                            if (fitnessLevel === "beginner") {
-                                userStage = "beginner1";
-                            } else if (fitnessLevel === "intermediate") {
-                                userStage = "intermediate1";
-                            } else {
-                                userStage = "advanced1";
-                            }
-            
-                            // Save the initial stage in Firebase
-                            await update(userRef, { stage: userStage });
-                        }
-            
-                        updateFitnessLevelDisplay(fitnessLevel);
-                        await fetchExercisesForFitnessLevel(fitnessLevel);
-                    }
-                } catch (error) {
-                    console.error("Error fetching user fitness level:", error);
-                }
+async function fetchUserFitnessLevel(userId) {
+    try {
+        const userRef = ref(database, `users/${userId}`);
+        const snapshot = await get(userRef);
+        
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            let fitnessLevel = userData.fitnessLevel; // Check if fitness level is set
+            let userStage = userData.stage; // Check if stage is set
+    
+            // If no fitness level exists, set it to "beginner" and store in Firebase
+            if (!fitnessLevel) {
+                fitnessLevel = "beginner";
+                await update(userRef, { fitnessLevel }); // Save fitness level
             }
-            
-            
+    
+            // If no stage exists, initialize based on fitness level
+            if (!userStage) {
+                if (fitnessLevel === "beginner") {
+                    userStage = "beginner1";
+                } else if (fitnessLevel === "intermediate") {
+                    userStage = "intermediate1";
+                } else {
+                    userStage = "advanced1";
+                }
+    
+                // Save the initial stage in Firebase
+                await update(userRef, { stage: userStage });
+            }
+    
+            updateFitnessLevelDisplay(fitnessLevel);
+            await fetchExercisesForFitnessLevel(fitnessLevel);
+        }
+    } catch (error) {
+        console.error("Error fetching user fitness level:", error);
+    }
+}
+
 function updateFitnessLevelDisplay(fitnessLevel) {
     const fitnessLevelDisplay = document.getElementById('fitness-level');
     if (fitnessLevelDisplay) {
@@ -351,6 +334,7 @@ function updateFitnessLevelDisplay(fitnessLevel) {
         fitnessLevelDisplay.classList.add(fitnessLevel.toLowerCase());
     }
 }
+
 async function fetchExercisesForFitnessLevel(fitnessLevel) {
     try {
         // Fetch exercises from Firestore for the specific fitness level
@@ -371,37 +355,40 @@ async function fetchExercisesForFitnessLevel(fitnessLevel) {
 function updateWorkoutCards(exercises) {
     const workoutsContainer = document.querySelector('.workouts');
     
-    // Clear existing workout cards
-    workoutsContainer.innerHTML = '';
-    
-    // Create new workout cards based on fetched exercises
-    exercises.forEach(exercise => {
-        const workoutCard = `
-            <div class="workout-card">
-                <div class="card-inner">
-                    <div class="card-front">
-                        <img src="${exercise.image}" alt="${exercise.name}">
-                        <h2 class="para">${exercise.name}</h2>
-                    </div>
-                    <div class="card-back">
-                        <h3>${exercise.name}</h3>
-                        <p>${exercise.description}</p>
-                        <p>Sets: ${exercise.sets}</p>
-                        <p>${exercise.reps ? `Reps: ${exercise.reps}` : `Duration: ${exercise.duration}`}</p>
-                        <p>Rest: ${exercise.rest}</p>
+    if (workoutsContainer) {
+        // Clear existing workout cards
+        workoutsContainer.innerHTML = '';
+        
+        // Create new workout cards based on fetched exercises
+        exercises.forEach(exercise => {
+            const workoutCard = `
+                <div class="workout-card">
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <img src="${exercise.image}" alt="${exercise.name}">
+                            <h2 class="para">${exercise.name}</h2>
+                        </div>
+                        <div class="card-back">
+                            <h3>${exercise.name}</h3>
+                            <p>${exercise.description}</p>
+                            <p>Sets: ${exercise.sets}</p>
+                            <p>${exercise.reps ? `Reps: ${exercise.reps}` : `Duration: ${exercise.duration}`}</p>
+                            <p>Rest: ${exercise.rest}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+            
+            workoutsContainer.innerHTML += workoutCard;
+        });
         
-        workoutsContainer.innerHTML += workoutCard;
-    });
-    
-    // Reinitialize card flip listeners
-    initializeCardFlipListeners();
+        // Reinitialize card flip listeners
+        initializeCardFlipListeners();
+    } else {
+        console.error('Workouts container not found');
+    }
 }
 
-// Keep your existing initializeCardFlipListeners function
 function initializeCardFlipListeners() {
     const cards = document.querySelectorAll('.workout-card');
     cards.forEach(card => {
@@ -415,6 +402,204 @@ function initializeCardFlipListeners() {
             }
         });
     });
+}
+
+// Function to fetch and calculate calories for completed exercises
+function fetchAndCalculateCompletedExerciseCalories(userId) {
+    console.log("Fetching completed exercises for calorie calculation for user:", userId);
+    
+    // First, get the user's current stage
+    const userStageRef = ref(database, `users/${userId}/stage`);
+    get(userStageRef).then((stageSnapshot) => {
+        if (stageSnapshot.exists()) {
+            const userStage = stageSnapshot.val();
+            console.log("User stage:", userStage);
+            
+            // Now fetch all completed exercises for the user
+            const completedExercisesRef = ref(database, `users/${userId}/completedExercises`);
+            get(completedExercisesRef).then((exercisesSnapshot) => {
+                if (exercisesSnapshot.exists()) {
+                    const completedExercisesData = exercisesSnapshot.val();
+                    console.log("Completed exercises data:", completedExercisesData);
+                    // Add detailed logging of the complete structure
+                    console.log("Complete structure of completed exercises:", JSON.stringify(completedExercisesData, null, 2));
+                    
+                    // Get current total calories
+                    const totalCaloriesRef = ref(database, `users/${userId}/totalCaloriesBurned`);
+                    get(totalCaloriesRef).then((caloriesSnapshot) => {
+                        let currentTotalCalories = caloriesSnapshot.exists() ? caloriesSnapshot.val() : 0;
+                        console.log("Current total calories:", currentTotalCalories);
+                        
+                        // Track newly calculated calories to avoid double counting
+                        let newlyCalculatedCalories = 0;
+                        
+                        // Process each date of completed exercises
+                        Object.keys(completedExercisesData).forEach(date => {
+                            const dailyExercises = completedExercisesData[date];
+                            console.log(`Processing exercises for date: ${date}`, dailyExercises);
+                            
+                            // Process each exercise entry for the day
+                            Object.keys(dailyExercises).forEach(exerciseKey => {
+                                const exerciseValue = dailyExercises[exerciseKey];
+                                console.log(`Processing exercise: ${exerciseKey}`, exerciseValue);
+                                
+                                // Only process if the exercise is marked as completed (true)
+                                // and doesn't already have calories calculated
+                                if (exerciseValue === true || (typeof exerciseValue === 'object' && exerciseValue.completed && !exerciseValue.caloriesBurned)) {
+                                    // Use the exercise key as the exercise name
+                                    const exerciseName = exerciseKey;
+                                    
+                                    // Calculate calories based on exercise key and user stage
+                                    console.log(`Calculating calories for: ${exerciseName} (${userStage})`);
+                                    const calculatedCalories = calculateCaloriesForExercise(exerciseName, userStage);
+                                    
+                                    // Update the exercise entry with calories burned
+                                    // If it's a boolean, convert it to an object
+                                    const exerciseRef = ref(database, `users/${userId}/completedExercises/${date}/${exerciseKey}`);
+                                    
+                                    if (exerciseValue === true) {
+                                        console.log(`Converting boolean to object for ${exerciseName}`);
+                                        // Replace boolean with an object
+                                        set(exerciseRef, { 
+                                            completed: true,
+                                            caloriesBurned: calculatedCalories 
+                                        }).then(() => {
+                                            console.log(`Updated ${exerciseName} with calories: ${calculatedCalories}`);
+                                        }).catch(error => {
+                                            console.error(`Error updating ${exerciseName}:`, error);
+                                        });
+                                    } else {
+                                        console.log(`Updating existing object for ${exerciseName}`);
+                                        // Just update the existing object
+                                        update(exerciseRef, { caloriesBurned: calculatedCalories })
+                                        .then(() => {
+                                            console.log(`Updated ${exerciseName} with calories: ${calculatedCalories}`);
+                                        }).catch(error => {
+                                            console.error(`Error updating ${exerciseName}:`, error);
+                                        });
+                                    }
+                                    
+                                    // Add to newly calculated total
+                                    newlyCalculatedCalories += calculatedCalories;
+                                    console.log(`Added ${calculatedCalories} calories for ${exerciseName}`);
+                                } else {
+                                    console.log(`Skipping ${exerciseKey}: already processed or not completed`);
+                                }
+                            });
+                        });
+                        
+                        // Update total calories if new calories were calculated
+                        if (newlyCalculatedCalories > 0) {
+                            const newTotal = currentTotalCalories + newlyCalculatedCalories;
+                            console.log(`Updating total calories from ${currentTotalCalories} to ${newTotal}`);
+                            set(totalCaloriesRef, newTotal).then(() => {
+                                console.log(`Total calories updated to ${newTotal}`);
+                                updateCaloriesBurnedDisplay(newTotal);
+                            }).catch(error => {
+                                console.error("Error updating total calories:", error);
+                            });
+                        } else {
+                            console.log("No new calories calculated");
+                        }
+                    }).catch(error => {
+                        console.error("Error fetching total calories:", error);
+                    });
+                } else {
+                    console.log("No completed exercises found for user");
+                }
+            }).catch(error => {
+                console.error("Error fetching completed exercises:", error);
+            });
+        } else {
+            console.log("User stage not found");
+        }
+    }).catch(error => {
+        console.error("Error fetching user stage:", error);
+    });
+}
+
+// Calculate calories based on exercise type and user's fitness stage
+function calculateCaloriesForExercise(exerciseName, userStage) {
+    // Check if exerciseName is undefined or null
+    if (!exerciseName) {
+        console.error("Exercise name is undefined or null");
+        return 0; // Return default value when no name is provided
+    }
+    
+    console.log(`Calculating calories for exercise: ${exerciseName}, stage: ${userStage}`);
+    
+    // Define base calorie burn rates for different exercises
+    const baseCalories = {
+        // Original exercises
+        'jumping-jacks': 8,
+        'squats': 6,
+        'pushups': 7,
+        'planks': 5,
+        
+        // Add the exercise keys from your database
+        'cardio_hand_raises': 5,
+        'cardio_jumping_jacks': 8,
+        'flexibility_standing_quad_stretch': 4,
+        'strength_squats': 6,
+        
+        // Add more exercises based on your database structure
+        'cardio': 8,
+        'strength': 7,
+        'flexibility': 4,
+        'balance': 5,
+        
+        // Add exercise category prefixes
+        'cardio_': 8,
+        'strength_': 7,
+        'flexibility_': 4,
+        'balance_': 5
+    };
+    
+    // Stage multipliers - advanced users burn more calories due to intensity
+    const stageMultiplier = {
+        'beginner1': 1.0,
+        'beginner2': 1.1,
+        'beginner3': 1.2,
+        'intermediate1': 1.3,
+        'intermediate2': 1.4,
+        'intermediate3': 1.5,
+        'advanced1': 1.6,
+        'advanced2': 1.8,
+        'advanced3': 2.0
+    };
+    
+    // Get the base calorie value for the exercise
+    let baseCalorieValue = 5; // Default value
+    
+    // First try an exact match
+    if (baseCalories[exerciseName.toLowerCase()]) {
+        baseCalorieValue = baseCalories[exerciseName.toLowerCase()];
+    } else {
+        // If no exact match, try to match by prefix
+        for (const prefix of ['cardio_', 'strength_', 'flexibility_', 'balance_']) {
+            if (exerciseName.toLowerCase().startsWith(prefix) && baseCalories[prefix]) {
+                baseCalorieValue = baseCalories[prefix];
+                break;
+            }
+        }
+        
+        // If still no match, try to match by first part before underscore
+        const parts = exerciseName.toLowerCase().split('_');
+        if (parts.length > 1 && baseCalories[parts[0]]) {
+            baseCalorieValue = baseCalories[parts[0]];
+        }
+    }
+    
+    console.log(`Base calories for ${exerciseName}: ${baseCalorieValue}`);
+    
+    // Get multiplier for user stage (default to 1.0 if stage not found)
+    const multiplier = stageMultiplier[userStage] || 1.0;
+    console.log(`Stage multiplier for ${userStage}: ${multiplier}`);
+    
+    // Calculate and return calories (rounded to nearest integer)
+    const result = Math.round(baseCalorieValue * multiplier);
+    console.log(`Calculated calories: ${result}`);
+    return result;
 }
 
 console.log("Script finished loading");
