@@ -1,5 +1,21 @@
 // levelCalculator.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+// Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyAOgdbddMw93MExNBz3tceZ8_NrNAl5q40",
+    authDomain: "fitquest-9b891.firebaseapp.com",
+    projectId: "fitquest-9b891",
+    storageBucket: "fitquest-9b891.appspot.com",
+    messagingSenderId: "275044631678",
+    appId: "1:275044631678:web:7fa9586ba031270baa042f",
+    measurementId: "G-6W3V2DH02K"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 
 // Constants for level calculations
 const POINTS_PER_LEVEL = 500;
@@ -9,7 +25,6 @@ const POINTS_PER_PROGRESS_PERCENTAGE = 0.75; // 15 points per 20% (0.75 per 1%)
 // Main function to calculate and update user level
 export async function calculateAndUpdateUserLevel(userId) {
     try {
-        const database = getDatabase();
         const userRef = ref(database, `users/${userId}`);
         const userSnapshot = await get(userRef);
 
@@ -59,7 +74,6 @@ export async function calculateAndUpdateUserLevel(userId) {
 // Calculate points from progress percentages
 async function calculateProgressPoints(userId) {
     try {
-        const database = getDatabase();
         const progressRef = ref(database, `users/${userId}/dailyProgress`);
         const progressSnapshot = await get(progressRef);
         
@@ -97,7 +111,6 @@ async function calculateProgressPoints(userId) {
 // Function to fetch user level data
 export async function getUserLevelData(userId) {
     try {
-        const database = getDatabase();
         const userRef = ref(database, `users/${userId}`);
         const userSnapshot = await get(userRef);
         

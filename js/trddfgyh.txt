@@ -1,0 +1,44 @@
+exercises_data = {
+    "beginner": {
+        "strength": [
+            {"exercise": "Squats", "type": "Reps", "reps": "10", "sets": "3", "rest": "30"},
+            {"exercise": "Standing side leg lifts", "type": "Reps", "reps": "10", "sets": "3", "rest": "30"},
+            {"exercise": "leg raises", "type": "Reps", "reps": "12", "sets": "3", "rest": "30"}
+        ],
+        "cardio": [
+            {"exercise": "hand raises", "type": "reps","reps": "15", "sets": "3", "rest": "20"},
+            {"exercise": "Jumping Jacks", "type": "reps","reps": "15", "sets": "3", "rest": "30"}
+        ],
+        "flexibility": [
+            {"exercise": "standing quad stretch", "type": "Hold", "hold": "20","sets": "3", "rest": "15"},
+            {"exercise": "side steps",  "type": "reps","reps": "15", "sets": "3", "rest": "20"}
+        ]
+    },
+    "intermediate": {
+        "strength": [
+            {"exercise": " leg raises", "type": "Reps", "reps": "12", "sets": "3", "rest": "30"},
+            {"exercise": "sumo squats", "type": "Reps", "reps": "12", "sets": "3", "rest": "30"},
+            {"exercise": "Standing-crunches", "type": "Reps", "reps": "10", "sets": "3", "rest": "30"}
+        ],
+        "cardio": [
+            {"exercise": "arm circles", "type": "reps","reps": "15", "sets": "3", "rest": "20"},
+            {"exercise": "skipping", "type": "reps","reps": "15", "sets": "3", "rest": "30"}
+        ],
+        "flexibility": [
+            {"exercise": "side to side jabs", "type": "reps","reps": "20", "sets": "3", "rest": "30"},
+            {"exercise": "knee hugs", "type": "reps","reps": "20", "sets": "3", "rest": "30"}
+        ]
+    },
+    "advanced": {
+        "strength": [
+            {"exercise": "Deadlifts", "type": "Reps", "reps": "8", "sets": "3", "rest": "45"},
+            {"exercise": "Bench Press", "type": "Reps", "reps": "8", "sets": "4", "rest": "45"},
+            {"exercise": "bridge", "type": "Reps", "reps": "8", "sets": "3", "rest": "45"}
+        ],
+        "cardio": [
+            {"exercise": "Side Hops", "type": "reps","reps": "15", "sets": "3", "rest": "30"},
+            {"exercise": "squat jumps", "type": "reps","reps": "15", "sets": "3", "rest": "30"}
+        ],
+        "flexibility": [
+            {"exercise": "leg raises", "type": "reps","reps": "15", "sets": "3", "rest": "30"},
+            {"exercise": "glute bridges", "type": "reps","reps": "15", "sets": "3", "rest": "30"}
