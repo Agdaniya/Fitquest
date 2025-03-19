@@ -6,6 +6,7 @@
     <title>FitQuest Workout Plan</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/tracker.css">
+    <link rel="stylesheet" href="./css/level.css">
     <script type="module" src="./js/tracker.js"></script>
 </head>
 <body>
@@ -88,7 +89,17 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-
+<script type="module">
+    import { initializeLevelDisplay } from './js/leveldisplaymodule.js';
+    
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Get the user ID from localStorage or your authentication system
+        const userId = localStorage.getItem('userId') || 'default-user';
+        
+        // Initialize the level display
+        await initializeLevelDisplay(userId);
+    });
+</script>
 <!-- Load your JavaScript as a module -->
   
   <!-- Your tracker.js file -->

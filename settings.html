@@ -6,6 +6,7 @@
     <title>FitQuest Workout Plan</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/settings.css">
+    <link rel="stylesheet" href="./css/level.css">
 </head>
 <body>
     <div id="notification-container"></div>
@@ -62,7 +63,17 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="./js/settings.js"></script>
-
+    <script type="module">
+        import { initializeLevelDisplay } from './js/leveldisplaymodule.js';
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Get the user ID from localStorage or your authentication system
+            const userId = localStorage.getItem('userId') || 'default-user';
+            
+            // Initialize the level display
+            await initializeLevelDisplay(userId);
+        });
+    </script>
            
 </body>
 </html>
