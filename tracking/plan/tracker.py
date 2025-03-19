@@ -106,10 +106,34 @@ def count_reps(landmarks, exercise_type):
     
     # Standing side leg lifts - track ankle horizontal movement
     elif exercise_type.lower() in ["standing side leg lifts"]:
+        # Get landmarks needed for tracking
+        left_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
+        right_hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]
+        left_knee = landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value]
+        right_knee = landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value]
         left_ankle = landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value]
         right_ankle = landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value]
-        # Track separation between ankles
-        return abs(left_ankle.x - right_ankle.x)  # Larger value = wider lift
+        
+        # Calculate the horizontal distance between hip and ankle for each leg
+        left_hip_ankle_distance = abs(left_ankle.x - left_hip.x)
+        right_hip_ankle_distance = abs(right_ankle.x - right_hip.x)
+        
+        # Check if knees are relatively straight during the lift (not bent)
+        left_knee_straight = abs(left_knee.y - ((left_hip.y + left_ankle.y) / 2)) < 0.05
+        right_knee_straight = abs(right_knee.y - ((right_hip.y + right_ankle.y) / 2)) < 0.05
+        
+        # Create a combined metric for leg lift detection
+        # If left leg is lifted properly, return a positive value
+        # If right leg is lifted properly, return a negative value
+        # If no lift is detected, return a value close to zero
+        leg_lift_threshold = 0.15
+        
+        if left_hip_ankle_distance > leg_lift_threshold and left_knee_straight and right_hip_ankle_distance <= leg_lift_threshold:
+            return left_hip_ankle_distance  # Positive value for left leg lift
+        elif right_hip_ankle_distance > leg_lift_threshold and right_knee_straight and left_hip_ankle_distance <= leg_lift_threshold:
+            return -right_hip_ankle_distance  # Negative value for right leg lift
+        else:
+            return 0.0 
     
     # Hand/arm raises tracking - track wrist height
     elif exercise_type.lower() in ["hand raises", "lateral arm raises"]:
@@ -184,11 +208,17 @@ def count_reps(landmarks, exercise_type):
         
     # Side steps tracking - track feet separation horizontally
     elif exercise_type.lower() in ["side steps"]:
-        left_ankle = landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value]
-        right_ankle = landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value]
-        # Track separation between feet
-        return abs(left_ankle.x - right_ankle.x)  # Larger value = wider step
-    
+        # Get landmarks needed for tracking
+        left_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
+        right_hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]
+        
+        # Calculate the midpoint between hips
+        hip_midpoint_x = (left_hip.x + right_hip.x) / 2
+        
+        # Return the horizontal position of hip midpoint
+        # This value changes significantly during side steps
+        return hip_midpoint_x  # Position value that changes during side-to-side movement
+        
     # Standing crunches - track knee and elbow proximity
     elif exercise_type.lower() in ["standing-crunches"]:
         knee = landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value]
@@ -242,10 +272,31 @@ def count_reps(landmarks, exercise_type):
         return squat_depth + (1 - jump_height)  # Combined measure
     
     # Skipping - similar to jumping jacks but focus on ankle height from ground
-    elif exercise_type.lower() in ["skipping"]:
-        ankle = landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value]
-        # Track ankle height (lower y value = higher position)
-        return -ankle.y  # Negative because lower y value means higher position in image
+   elif exercise_type.lower() in ["quad stretch", "quadstretch"]:
+        # Get required landmarks
+        left_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
+        right_hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]
+        left_knee = landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value]
+        right_knee = landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value]
+        left_foot_index = landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value]
+        right_foot_index = landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value]
+        
+        # Calculate distances between feet and hips for quad stretch detection
+        left_foot_to_hip_distance = ((left_foot_index.x - left_hip.x)**2 + 
+                                    (left_foot_index.y - left_hip.y)**2)**0.5
+        
+        right_foot_to_hip_distance = ((right_foot_index.x - right_hip.x)**2 + 
+                                     (right_foot_index.y - right_hip.y)**2)**0.5
+        
+        # Create a dictionary with the necessary values for state tracking
+        return {
+            "left_foot_to_hip": left_foot_to_hip_distance,
+            "right_foot_to_hip": right_foot_to_hip_distance,
+            "left_foot_y": left_foot_index.y,
+            "right_foot_y": right_foot_index.y,
+            "left_knee_y": left_knee.y,
+            "right_knee_y": right_knee.y
+        }
     
     # Default fallback for any unspecified exercises - track general body movement
     else:
@@ -284,6 +335,13 @@ def start_tracking(exercise_name, exercise_type, exercise_details):
     workout_type = exercise_type.lower()  # Use the specified exercise type
     sets = int(details.get("sets", 1))
     rest_time = int(details.get("rest", 30))
+
+    if exercise_name.lower() in ["quad stretch", "quadstretch"]:
+    quad_stretch_active = False
+    current_stretch_leg = "none"  # "left", "right", or "none"
+    foot_hip_threshold = 0.2  # Threshold for foot-to-hip distance
+    left_count = 0
+    right_count = 0
     
     # Type-specific parameters
     # Handle the specific exercise types from your app
@@ -394,6 +452,144 @@ def start_tracking(exercise_name, exercise_type, exercise_details):
                             rep_direction_up = True
                             current_rep += 1
                             print(f"Jumping jack rep {current_rep} completed")
+                    elif workout_type == "reps" and exercise_name.lower() in ["quad stretch", "quadstretch"]:
+                        # Get the data from count_reps
+                        stretch_data = count_reps(landmarks, exercise_name)
+                        
+                        # Check for left quad stretch: Right foot near ground, left foot near hip
+                        left_quad_stretch = (
+                            stretch_data["left_foot_to_hip"] < foot_hip_threshold and
+                            stretch_data["right_foot_y"] > stretch_data["right_knee_y"]  # Right foot below knee (standing)
+                        )
+                        
+                        # Check for right quad stretch: Left foot near ground, right foot near hip
+                        right_quad_stretch = (
+                            stretch_data["right_foot_to_hip"] < foot_hip_threshold and
+                            stretch_data["left_foot_y"] > stretch_data["left_knee_y"]  # Left foot below knee (standing)
+                        )
+                        
+                        # Process the quad stretch detection
+                        if left_quad_stretch and not right_quad_stretch:
+                            if current_stretch_leg != "left":
+                                current_stretch_leg = "left"
+                                stretch_start_time = current_time
+                                quad_stretch_active = True
+                                print("Left quad stretch position detected")
+                            
+                            # Update time in position
+                            time_in_position = current_time - stretch_start_time
+                            
+                            # Check if we've held the position long enough
+                            if time_in_position >= duration:  # Use the duration as the required hold time
+                                left_count += 1
+                                current_rep += 0.5  # Count each side as half a rep
+                                print(f"Left Quad Stretch completed: {left_count}")
+                                # Reset the timer for the next count
+                                stretch_start_time = current_time
+                                current_stretch_leg = "none"  # Reset to detect a new stretch
+                                
+                        elif right_quad_stretch and not left_quad_stretch:
+                            if current_stretch_leg != "right":
+                                current_stretch_leg = "right"
+                                stretch_start_time = current_time
+                                quad_stretch_active = True
+                                print("Right quad stretch position detected")
+                            
+                            # Update time in position
+                            time_in_position = current_time - stretch_start_time
+                            
+                            # Check if we've held the position long enough
+                            if time_in_position >= duration:  # Use the duration as the required hold time
+                                right_count += 1
+                                current_rep += 0.5  # Count each side as half a rep
+                                print(f"Right Quad Stretch completed: {right_count}")
+                                # Reset the timer for the next count
+                                stretch_start_time = current_time
+                                current_stretch_leg = "none"  # Reset to detect a new stretch
+                    
+                        else:
+                            if quad_stretch_active:
+                                print("Quad stretch position lost")
+                            quad_stretch_active = False
+                            current_stretch_leg = "none"
+                        
+                        # Display additional information for quad stretch
+                        if current_stretch_leg != "none":
+                            cv2.putText(frame, f"Hold Time: {time_in_position:.1f}/{duration}s", 
+                                    (50, 300), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                            
+                            # Add a progress bar
+                            progress = min(time_in_position / duration, 1.0)
+                            bar_width = int(200 * progress)
+                            cv2.rectangle(frame, (50, 310), (250, 330), (50, 50, 50), -1)
+                            cv2.rectangle(frame, (50, 310), (50 + bar_width, 330), (0, 255, 0), -1)
+                        
+                        cv2.putText(frame, f"Left: {left_count}, Right: {right_count}", (50, 350), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+                    # Add inside the start_tracking function where other exercise-specific logic is handled
+                    elif exercise_name.lower() in ["side steps"]:
+                        # Define thresholds for side step detection
+                        center_position = None  # Will be set on first frame
+                        side_step_threshold = 0.05  # Threshold for detecting a side step
+                        in_step = False
+                        step_direction = None
+                        
+                        # In the main tracking loop where landmarks are processed
+                        if results.pose_landmarks:
+                            landmarks = results.pose_landmarks.landmark
+                            current_position = count_reps(landmarks, exercise_name)
+                            
+                            # Initialize center position if not set
+                            if center_position is None:
+                                center_position = current_position
+                                print("Center position initialized")
+                            
+                            # Calculate position relative to center
+                            relative_position = current_position - center_position
+                            
+                            # Step detection logic
+                            if not in_step:
+                                # Check if person has moved significantly to start a step
+                                if abs(relative_position) > side_step_threshold:
+                                    in_step = True
+                                    step_direction = "right" if relative_position > 0 else "left"
+                                    print(f"Starting step to the {step_direction}")
+                            else:
+                                # Check if person has moved back to center or to the opposite side
+                                returned_to_center = abs(relative_position) < side_step_threshold / 2
+                                opposite_direction = (step_direction == "right" and relative_position < -side_step_threshold) or \
+                                                    (step_direction == "left" and relative_position > side_step_threshold)
+                                
+                                if returned_to_center or opposite_direction:
+                                    in_step = False
+                                    current_rep += 1
+                                    print(f"Side step completed: {current_rep}")
+                                    step_direction = None
+                    # Inside the start_tracking function where the exercise-specific logic is handled
+                    elif exercise_name.lower() in ["standing side leg lifts"]:
+                        # Define thresholds for side leg lift detection
+                        leg_lift_threshold = 0.15  # Threshold for detecting a leg lift
+                        
+                        # State tracking for leg lifts
+                        if current_position > leg_lift_threshold and not rep_direction_up:
+                            # Left leg is lifted and previously was down
+                            rep_direction_up = True
+                            print("Left leg lift detected")
+                        elif current_position < -leg_lift_threshold and not rep_direction_up:
+                            # Right leg is lifted and previously was down
+                            rep_direction_up = True
+                            print("Right leg lift detected")
+                        elif abs(current_position) < 0.05 and rep_direction_up:
+                            # Legs returned to normal position after being lifted
+                            rep_direction_up = False
+                            current_rep += 0.5  # Count each leg as half a rep
+                            print(f"Leg lift completed - Current count: {current_rep}")
+                            
+                        # Additional display info can be added
+                        leg_status = "Left leg up" if current_position > leg_lift_threshold else "Right leg up" if current_position < -leg_lift_threshold else "Standing"
+                        cv2.putText(frame, f"Status: {leg_status}", (50, 350), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                     else:
                         # Keep original rep detection for other exercises
                         if rep_direction_up and last_rep_position - current_position > rep_threshold:
