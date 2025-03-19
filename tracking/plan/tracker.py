@@ -3,13 +3,16 @@ import json
 import cv2
 import mediapipe as mp
 import time
-import math
+import requests
 from datetime import datetime
 
 # Initialize MediaPipe Pose
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
 pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+
+# Server endpoint for reporting completion
+SERVER_URL = "http://localhost:5001"
 
 def open_camera():
     """Opens the camera for testing with pose detection."""
@@ -53,17 +56,6 @@ def open_camera():
     cv2.destroyAllWindows()
     print("Camera test ended.")
 
-def calculate_angle(a, b, c):
-    """Calculates the angle between three points: a, b, and c (in 2D)."""
-    a = [a.x, a.y]
-    b = [b.x, b.y]
-    c = [c.x, c.y]
-    radians = math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0])
-    angle = abs(radians * 180.0 / math.pi)
-    if angle > 180.0:
-        angle = 360.0 - angle
-    return angle
-
 def count_reps(landmarks, exercise_type):
     """
     Basic implementation of rep counting based on specific joint movements.
@@ -71,39 +63,33 @@ def count_reps(landmarks, exercise_type):
     """
     # Example for squat: track hip movement up and down
     if exercise_type.lower() == "squat":
-       # Get hip, knee, and ankle landmarks
-        left_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
-        left_knee = landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value]
-        left_ankle = landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value]
-        right_hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value] 
-        right_knee = landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value]
-        right_ankle = landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value]
-        
-        # Calculate knee angles
-        left_knee_angle = calculate_angle(left_hip, left_knee, left_ankle)
-        right_knee_angle = calculate_angle(right_hip, right_knee, right_ankle)
-        
-        # Return average of both knee angles
-        return (left_knee_angle + right_knee_angle) / 2
+        # Get hip landmark (e.g., hip point)
+        hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
+        return hip.y  # Return y-position for threshold checking
     
     # Example for push-up: track shoulder movement
-     elif exercise_type.lower() in ["legraises", "leg raises", "leg raise"]:
-        left_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
-        right_hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]
-        left_ankle = landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value]
-        right_ankle = landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value]
-        
-        # Calculate vertical distance between ankles and hips
-        left_leg_diff = left_hip.y - left_ankle.y
-        right_leg_diff = right_hip.y - right_ankle.y
-        
-        # Return the max difference (whichever leg is most raised)
-        return max(left_leg_diff, right_leg_diff)
+    elif exercise_type.lower() in ["pushup", "push-up", "push up"]:
+        shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value]
+        return shoulder.y
     
     # Default case: track movement of wrist for generic exercises
     else:
         wrist = landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value]
         return wrist.y
+
+def report_exercise_completed(exercise_data):
+    """Reports to the server that an exercise has been completed."""
+    try:
+        response = requests.post(
+            f"{SERVER_URL}/exercise-completed", 
+            json=exercise_data,
+            headers={"Content-Type": "application/json"}
+        )
+        print(f"Exercise completion reported: {response.status_code} - {response.text}")
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Error reporting exercise completion: {e}")
+        return False
 
 def start_tracking(exercise_name, exercise_type, exercise_details):
     """Tracks exercise movements based on the given type and details."""
@@ -150,6 +136,7 @@ def start_tracking(exercise_name, exercise_type, exercise_details):
     last_rep_position = 0
     rep_threshold = 0.05  # Threshold for detecting a rep
     rep_direction_up = True  # Track rep movement direction
+    exercise_completed = False
     
     print(f"Starting exercise: {exercise_name}, Set 1 of {sets}")
     
@@ -207,6 +194,7 @@ def start_tracking(exercise_name, exercise_type, exercise_details):
                             print(f"Set {current_set} completed. Starting rest period of {rest_time}s")
                         else:
                             print(f"Exercise {exercise_name} completed!")
+                            exercise_completed = True
                             break
                             
                 elif workout_type in ["time", "hold"]:
@@ -223,6 +211,7 @@ def start_tracking(exercise_name, exercise_type, exercise_details):
                             print(f"Set {current_set} completed. Starting rest period of {rest_time}s")
                         else:
                             print(f"Exercise {exercise_name} completed!")
+                            exercise_completed = True
                             break
             
             elif state == "rest":
@@ -249,12 +238,30 @@ def start_tracking(exercise_name, exercise_type, exercise_details):
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         cv2.imshow("Exercise Tracking", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        key = cv2.waitKey(1) & 0xFF
+        
+        # Allow manual completion with 'c' key (for testing)
+        if key == ord('c'):
+            print("Exercise manually marked as completed")
+            exercise_completed = True
+            break
+        # Or quit with 'q' key
+        elif key == ord('q'):
             print("Exercise tracking stopped by user")
             break
 
     cap.release()
     cv2.destroyAllWindows()
+    
+    # Report completion to server if exercise was completed
+    if exercise_completed:
+        report_exercise_completed({
+            "name": exercise_name,
+            "type": exercise_type,
+            "details": details,
+            "category": details.get("category", "")
+        })
+    
     print(f"Finished tracking {exercise_name}")
 
 if __name__ == "__main__":

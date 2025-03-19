@@ -31,6 +31,9 @@ let currentWorkout = {
 let totalExercises = 0;
 let completedExercises = 0;
 
+// SSE event source for real-time updates
+let eventSource = null;
+
 const getFitnessLevel = async (userId) => {
     const userRef = ref(dbRealtime, `users/${userId}/fitnessLevel`);
     try {
@@ -137,7 +140,8 @@ const startWorkoutSession = async (exercisesData) => {
     const today = new Date().toISOString().split('T')[0];
     const userId = auth.currentUser.uid;
     const completedRef = ref(dbRealtime, `users/${userId}/completedExercises/${today}`);
-    
+    const completedExercises = window.globalCompletedExercisesList || {};
+
     try {
         const snapshot = await get(completedRef);
         if (snapshot.exists()) {
@@ -176,6 +180,9 @@ const startWorkoutSession = async (exercisesData) => {
     // Update button text
     document.getElementById("start-plan").textContent = "Stop Workout";
     
+    // Set up SSE connection for realtime updates
+    setupEventSource();
+    
     // Start camera first
     try {
         const response = await fetch("http://localhost:5001/start-camera", { 
@@ -195,6 +202,69 @@ const startWorkoutSession = async (exercisesData) => {
         console.error("Error starting camera:", err);
         alert("Failed to start camera. Please check that the server is running on port 5001.");
         resetWorkout();
+    }
+};
+
+// Set up event source for server-sent events
+const setupEventSource = () => {
+    // Close any existing connection
+    if (eventSource) {
+        eventSource.close();
+    }
+    
+    // Create new connection
+    eventSource = new EventSource("http://localhost:5001/events");
+    
+    // Handle incoming events
+    eventSource.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            
+            // Skip heartbeat events
+            if (data.type === "heartbeat") return;
+            
+            // Handle exercise completion event
+            if (data.completed) {
+                console.log("Exercise completed event received:", data);
+                handleExerciseCompletion(data);
+            }
+        } catch (error) {
+            console.error("Error parsing SSE event:", error);
+        }
+    };
+    
+    eventSource.onerror = (error) => {
+        console.error("SSE connection error:", error);
+        // Attempt to reconnect after 5 seconds
+        setTimeout(setupEventSource, 5000);
+    };
+    
+    console.log("SSE connection established");
+};
+
+// Handle exercise completion from server
+const handleExerciseCompletion = (exerciseData) => {
+    console.log(`Exercise completed: ${exerciseData.exercise}`);
+    
+    // Check if this is our current exercise
+    if (currentWorkout.inProgress && currentWorkout.currentExerciseIndex >= 0) {
+        const currentExercise = currentWorkout.flattenedExercises[currentWorkout.currentExerciseIndex];
+        
+        if (currentExercise && currentExercise.exercise === exerciseData.exercise) {
+            // Mark exercise as completed
+            markExerciseCompleted();
+            
+            // Update Firebase to mark as completed
+            markExerciseCompletedInDatabase(currentExercise);
+            
+            // Update UI
+            updateCompletedExerciseUI(currentExercise);
+            
+            // Move to next exercise
+            setTimeout(() => {
+                moveToNextExercise();
+            }, 2000); // Short delay to show completion
+        }
     }
 };
 
@@ -232,18 +302,11 @@ const moveToNextExercise = async () => {
         const data = await response.json();
         console.log(`${exercise.exercise} tracking started:`, data);
         
-        // Automatically move to next exercise after estimated completion time
-        // This is a basic approach - ideally the Python script would signal completion
-        const completionTime = calculateExerciseTime(exercise);
-        setTimeout(() => {
-            markExerciseCompleted();
-            markExerciseCompletedInDatabase(exercise); // Add this line
-            moveToNextExercise();
-        }, completionTime * 1000);
+        // We no longer need the timer-based completion since we're using server events
         
     } catch (err) {
         console.error(`Error tracking ${exercise.exercise}:`, err);
-        // Continue to next exercise if there's an error
+        // Continue to next exercise after a short delay if there's an error
         setTimeout(() => {
             moveToNextExercise();
         }, 3000);
@@ -325,6 +388,12 @@ const stopWorkout = async () => {
             headers: { "Content-Type": "application/json" }
         });
         
+        // Close SSE connection
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+        }
+        
         console.log("Workout stopped");
         resetWorkout();
         
@@ -358,6 +427,12 @@ const resetWorkout = () => {
     const progressContainer = document.getElementById("workout-progress-container");
     if (progressContainer) {
         progressContainer.remove();
+    }
+    
+    // Close SSE connection if it exists
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
     }
 };
 
@@ -416,6 +491,11 @@ const markExerciseCompletedInDatabase = (exercise) => {
     const userId = auth.currentUser.uid;
     const today = new Date().toISOString().split('T')[0];
     const exerciseId = `${exercise.category}_${exercise.exercise}`.replace(/\s+/g, '_').toLowerCase();
+    
+    // Also update the global list directly (for immediate UI feedback)
+    if (window.globalCompletedExercisesList) {
+        window.globalCompletedExercisesList[exerciseId] = true;
+    }
     
     // Save to database
     const completedRef = ref(dbRealtime, `users/${userId}/completedExercises/${today}/${exerciseId}`);
@@ -525,4 +605,33 @@ const checkStageProgression = async (userId) => {
     } catch (error) {
         console.error("Error checking stage progression:", error);
     }
+};
+const updateCompletedExerciseUI = (exercise) => {
+    // Create an identifier for the exercise
+    const exerciseId = `${exercise.category}_${exercise.exercise}`.replace(/\s+/g, '_').toLowerCase();
+    
+    // Find all exercise cards on the page
+    const exerciseCards = document.querySelectorAll('.exercise-card');
+    
+    // Loop through all cards to find the matching one
+    exerciseCards.forEach(card => {
+        const cardTitle = card.querySelector('h4')?.textContent;
+        const cardCategory = card.querySelector('p:first-of-type')?.textContent.split(':')[1]?.trim();
+        
+        // Check if this card matches our completed exercise
+        if (cardTitle === exercise.exercise && 
+            cardCategory === exercise.type) {
+            
+            // Update the card's appearance
+            card.classList.remove('in-progress');
+            card.classList.add('completed');
+            
+            // Update the button
+            const startButton = card.querySelector('.start-btn');
+            if (startButton) {
+                startButton.textContent = "Completed";
+                startButton.disabled = true;
+            }
+        }
+    });
 };
