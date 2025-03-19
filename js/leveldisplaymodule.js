@@ -1,7 +1,7 @@
-// levelDisplay.js
+// levelDisplayModule.js
 import { getUserLevelData, calculateAndUpdateUserLevel } from './levelcalculator.js';
 
-// Initialize the level display on the dashboard
+// Initialize the level display on any page
 export async function initializeLevelDisplay(userId) {
     try {
         // First, calculate and update the user's level
@@ -10,49 +10,19 @@ export async function initializeLevelDisplay(userId) {
         // Then fetch the updated level data
         const levelData = await getUserLevelData(userId);
         
-        // Update the display
-        updateLevelDisplay(levelData);
-        
-        // Add level icon to the dashboard
+        // Add level icon to the current page
         createLevelIcon(levelData.level);
         
         console.log("Level display initialized with data:", levelData);
+        
+        return levelData;
     } catch (error) {
         console.error("Error initializing level display:", error);
     }
 }
 
-// Update level display in the dashboard
-function updateLevelDisplay(levelData) {
-    // Create or update the level element in the stats section
-    const statsSection = document.querySelector('.stats');
-    
-    if (statsSection) {
-        // Check if the level card already exists
-        let levelCard = document.getElementById('level-card');
-        
-        if (!levelCard) {
-            // Create a new level card
-            levelCard = document.createElement('div');
-            levelCard.id = 'level-card';
-            levelCard.className = 'stat-card';
-            statsSection.appendChild(levelCard);
-        }
-        
-        // Update the level card content
-        levelCard.innerHTML = `
-            <h3>User Level</h3>
-            <p><span id="user-level">${levelData.level}</span></p>
-            <div class="level-progress">
-                <div class="level-progress-bar" style="width: ${(levelData.points % 500) / 5}%"></div>
-            </div>
-            <p class="points-info">${levelData.points % 500} / 500 points to next level</p>
-        `;
-    }
-}
-
 // Create a level icon in the top right corner
-function createLevelIcon(level) {
+export function createLevelIcon(level) {
     // Check if the level icon already exists
     let levelIcon = document.getElementById('level-icon');
     
