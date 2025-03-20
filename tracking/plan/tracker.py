@@ -92,10 +92,17 @@ def count_reps(landmarks, exercise_type):
     
     # Leg raises tracking - track ankle movement
     elif exercise_type.lower() in ["leg raises"]:
-        ankle = landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value]
-        hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
-        # Measure how high the ankle is raised relative to hip
-        return hip.y - ankle.y  # Larger value = higher leg raise
+        left_ankle = landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value]
+        left_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
+        right_ankle = landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value]
+        right_hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]
+        
+        left_leg_raise = left_hip.y - left_ankle.y
+        right_leg_raise = right_hip.y - right_ankle.y
+        
+        return max(left_leg_raise, right_leg_raise)
+    
+    return 0  # Default fallback
     
      # Sumo Squats tracking - track hip movement relative to knees
     elif exercise_type.lower() in ["sumo squats"]:
@@ -590,6 +597,13 @@ def start_tracking(exercise_name, exercise_type, exercise_details):
                         leg_status = "Left leg up" if current_position > leg_lift_threshold else "Right leg up" if current_position < -leg_lift_threshold else "Standing"
                         cv2.putText(frame, f"Status: {leg_status}", (50, 350), 
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    elif exercise_name.lower() == "leg raises":
+                        if current_position > rep_threshold and not rep_direction_up:
+                            rep_direction_up = True
+                        elif current_position < rep_threshold and rep_direction_up:
+                            rep_direction_up = False
+                            current_rep += 1
+                            print(f"Rep {current_rep} completed")
                     else:
                         # Keep original rep detection for other exercises
                         if rep_direction_up and last_rep_position - current_position > rep_threshold:
