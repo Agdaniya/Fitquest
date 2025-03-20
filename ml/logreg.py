@@ -8,7 +8,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier,plot_tree
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
-
+from sklearn.metrics import f1_score
 
 data = pd.read_csv('ml/assets/fitness_level.csv')
 
@@ -56,7 +56,7 @@ for name, model in models.items():
     print("Classification Report:")
     print(classification_report(y_test, y_pred))
 
-best_model = max(models, key=lambda m: accuracy_score(y_test, models[m].predict(X_test)))
+best_model = max(models, key=lambda m: f1_score(y_test, models[m].predict(X_test), average='weighted'))
 joblib.dump(models[best_model], 'ml/models/best_fitness_model.pkl')
 joblib.dump(scaler, 'ml/models/scaler.pkl')
 
