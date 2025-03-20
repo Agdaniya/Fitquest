@@ -9,6 +9,8 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier,plot_tree
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from sklearn.metrics import f1_score
+from sklearn.tree import export_text
+
 
 data = pd.read_csv('ml/assets/fitness_level.csv')
 
@@ -62,7 +64,9 @@ joblib.dump(scaler, 'ml/models/scaler.pkl')
 
 print(f"\nBest Model Saved: {best_model}")
 tree_model = models["Decision Tree"]
-
+tree_rules = export_text(tree_model, feature_names=['Age', 'BMI', 'FAF_value', 'Gender_v'])
+print("\nDecision Tree Rules:")
+print(tree_rules)
 
 
 
